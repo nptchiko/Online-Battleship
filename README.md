@@ -14,7 +14,19 @@
 ![New Project](https://github.com/user-attachments/assets/46fa7fcd-b8e6-4438-9bde-d20e29372605)
 
 # Bài toán đặt ra:
-### Công nghệ áp dụng:
-  **+ Server-side: Python, Flask-SocketIO, Flask framework**
+### Vấn đề:
+**+ Tính năng online nhiều người chơi trong trò chơi**
 
-  **+ Client-side: Kotlin**
+**+ Giao diện, thao tác và xử lí các sự kiện trong trò chơi**
+
+**+ Đồng bộ nội dung trên 2 thiêt bị giữa hai người chơi với nhau**
+
+### Đầu vào:
+**Phần lớn thao tác trong trò chơi sẽ là nhấp, thả, nhấn và nên dữ liệu cần quan tâm ở là tọa độ của con trỏ chuột/ngón tay của người màn hình trên màn hình**
+
+### Hướng giải quyết:
+**+ Trò chơi được xây dựng theo kiến trúc client-server trên giao thức socket để tạo giao tiếp event-base, hai chiều, độ trễ thấp giữa một client (Người chơi) và một server (Máy chủ)**
+
+**+ Server-side: dùng Flask-framework của python kết hợp Flask-SocketIO 
+
+**+ Client-side: Kotlin**
