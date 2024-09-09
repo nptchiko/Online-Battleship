@@ -107,22 +107,22 @@
       
 **5. Lối chơi thơì gian thực**
 
-    + Client sẽ nhận dữ liệu trang thái client gửi về và cập nhập giao diện
++ Client sẽ nhận dữ liệu trang thái client gửi về và cập nhập giao diện
  
-    + Quá trình này sẽ diễn ra liên tục đến khi gặp sự kiện kết thúc
++ Quá trình này sẽ diễn ra liên tục đến khi gặp sự kiện kết thúc
  
 **6. Sự kiện kết thúc**
 
-    + Trò chơi sẽ kết thúc một người chơi thỏa điều kiện thắng trước, Server sẽ ghi nhận kết quả và gửi thông báo người chơi, hiển thị `Victory` trên màn hình client người thắng và `Lose` trên client còn lại
++ Trò chơi sẽ kết thúc một người chơi thỏa điều kiện thắng trước, Server sẽ ghi nhận kết quả và gửi thông báo người chơi, hiển thị `Victory` trên màn hình client người thắng và `Lose` trên client còn lại
 
-    + Server sẽ gửi thông báo đến client liệu có chơi tiếp không
++ Server sẽ gửi thông báo đến client liệu có chơi tiếp không
 
-    + Server sẽ xóa đi phòng khi 2 người chơi thoát khỏi phòng
++ Server sẽ xóa đi phòng khi 2 người chơi thoát khỏi phòng
 
 **7. Client đóng kết nối**
 
-    + Khi người chơi muốn rời trò chơi, client sẽ gửi yêu cầu ngắt kết nối đến Server
++ Khi người chơi muốn rời trò chơi, client sẽ gửi yêu cầu ngắt kết nối đến Server
 
-    + Server nhận request ngắt kết nối, cập nhật lại phòng chơi
++ Server nhận request ngắt kết nối, cập nhật lại phòng chơi
 
-    + Server thông báo đến người chơi còn lại khi người chơi thoát phòng
++ Server thông báo đến người chơi còn lại khi người chơi thoát phòng
