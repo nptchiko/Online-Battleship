@@ -40,3 +40,9 @@
   
 **Client-side: Kotlin(Android programming language)**
 + Thiết kế toàn bộ giao diện của trò chơi, tiếp nhận dữ liệu và các thao tác từ người chơi. Đồng thời tạo client giao tiếp với server với sự hỗ trợ của Socket, lắng nghe phản hồi từ server và trả về dữ liệu cho server. 
+# Triển khai ý tưởng: Miku đẹp trai
+![image](https://github.com/user-attachments/assets/53ec1e46-8451-4a81-bd91-bf257e8f36ae)
+
+**1. Khởi tạo server**
+
++ Để server có thể hoạt động, bước đầu tiên cần làm là khởi tạo socket cho server, khởi tạo các endpoint để lắng nghe 
