@@ -43,6 +43,23 @@
 # Triển khai ý tưởng: Miku đẹp trai
 ![image](https://github.com/user-attachments/assets/53ec1e46-8451-4a81-bd91-bf257e8f36ae)
 
-**1. Khởi tạo server**
+**1. Khởi tạo server và client**
 
-+ Để server có thể hoạt động, bước đầu tiên cần làm là khởi tạo socket cho server, khởi tạo các endpoint để lắng nghe 
++ Để server có thể hoạt động, bước đầu tiên cần làm là khởi tạo socket cho server, khởi tạo các endpoint để lắng nghe các request từ client.
++ Sau khi khởi tạo xong, ta chạy server trên một port cụ thể và lắng nghe các request từ client.
++ Phía client cũng khởi tạo socket và thực hiện connect với server đang chạy trên port đã biết trước.
+
+**2. Thực hiện 'handshaking'**
+
++ Client kết nối server:
+    + Client thực hiện kết nối với server thông qua Websocket
++ Server thực hiện xác thực kết nối:
+    + Server nhận kết nối từ client và yêu cầu xác thực nếu có
+    + Server xác nhận kết nối và lưu sessionId của client yêu cầu
+    + Server gửi thông điệp về client là kết nối thành công
+
+**3. Quản lí phòng**
+
++ Client:
+    + 
+
