@@ -32,6 +32,18 @@
 + Nếu tọa độ vượt ra ngoài hitbox(vùng không gian có thể xử lí) thì trò chơi sẽ không phản hồi.
 + Nếu tọa độ người chơi đã chọn là tàu thì trò chơi sẽ thông báo người chơi đã bắn trúng...
 
+### Thuật toán:
+
++ Trò chơi sẽ chia màn hình thành 1 bảng với 10x10 ô, mỗi ô sẽ có cùng diện tích là 16px và tọa độ khác nhau, ô đầu tiên sẽ bắt đầu với tọa độ (0,0) ở trên bên trái
+àn hình
++ Với tọa độ(x,y) đầu vào, ta sẽ tính toán ô tương ứng mà người chơi muốn chọn:
+  
+      + Nếu x > 160px hoặc y > 160px tức tọa độ hiện tại đã nằm ngoài biên => không phản hồi
+
+      + Cho x = x/16(lấy phần nguyên)
+      + Cho y = y/16(lấy phần nguyên)
+      + Ta có thể trả về tọa độ ô đang trỏ đến => x,y
+
 ### Hướng giải quyết:
 + Trò chơi được xây dựng theo kiến trúc client-server trên giao thức socket để tạo giao tiếp event-base, hai chiều, độ trễ thấp giữa client (Người chơi) và server (Máy chủ)
 
@@ -81,4 +93,36 @@
 
         + Nếu phòng chưa tồn tại thì khởi tạo phòng mới và thêm client vào phòng.
 
-  
+**4. Đồng bộ giữa các client**
+
++ Client gửi trạng thái:
+
+    + Khi người thao tác thao tác tay nhấp vào màn hình, client sẽ hướng tọa độ và gửi về server tính toán
+
++ Server đồng bộ client:
+
+    + Server nhận tọa độ do client gửi về và bắt đầu tính toán theo thuật toán đã nêu, cho đầu ra và cập nhật trạng thái game.
+
+    + Server gửi dữ liệu trạng thái mới tới các client trong phòng để đồng bộ hóa nội dung trên toàn bộ client
+      
+**5. Lối chơi thơì gian thực**
+
+    + Client sẽ nhận dữ liệu trang thái client gửi về và cập nhập giao diện
+ 
+    + Quá trình này sẽ diễn ra liên tục đến khi gặp sự kiện kết thúc
+ 
+**6. Sự kiện kết thúc**
+
+    + Trò chơi sẽ kết thúc một người chơi thỏa điều kiện thắng trước, Server sẽ ghi nhận kết quả và gửi thông báo người chơi, hiển thị `Victory` trên màn hình client người thắng và `Lose` trên client còn lại
+
+    + Server sẽ gửi thông báo đến client liệu có chơi tiếp không
+
+    + Server sẽ xóa đi phòng khi 2 người chơi thoát khỏi phòng
+
+**7. Client đóng kết nối**
+
+    + Khi người chơi muốn rời trò chơi, client sẽ gửi yêu cầu ngắt kết nối đến Server
+
+    + Server nhận request ngắt kết nối, cập nhật lại phòng chơi
+
+    + Server thông báo đến người chơi còn lại khi người chơi thoát phòng
