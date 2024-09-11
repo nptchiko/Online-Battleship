@@ -126,3 +126,10 @@
 + Server nhận request ngắt kết nối, cập nhật lại phòng chơi
 
 + Server thông báo đến người chơi còn lại khi người chơi thoát phòng
+
+# Hướng dẫn chạy demo
++ `git clone https://github.com/nptchiko/Online-Battleship.git`
+
++ `cd Online-Battleship/demo`
+
++ `python3 demo.py`
