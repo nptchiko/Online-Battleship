@@ -94,7 +94,8 @@ class Board(ABC):
 
     def colour_grid(self, colours, include_ships=True):
         """Tô màu cho Board dựa theo tọa độ tương ứng"""
-        grid = [[colours["water"] for _ in range(self.size)] for _ in range(self.size)]
+        grid = [[colours["water"]
+                 for _ in range(self.size)] for _ in range(self.size)]
 
         if include_ships:
             for ship in self.ships_list:
@@ -235,7 +236,8 @@ class Display:
         Board dưới - AI
         """
         if upper_board is not None:
-            upper_colours = upper_board.colour_grid(self.colours, include_top_ships)
+            upper_colours = upper_board.colour_grid(
+                self.colours, include_top_ships)
 
         if lower_board is not None:
             lower_colours = lower_board.colour_grid(self.colours)
