@@ -1,24 +1,24 @@
 import pygame
 import random
 from abc import ABC
-from enum import Enum
+
 from itertools import zip_longest
 
 
 class Ship:
-    """An object to store the data of one ship"""
+    """Khởi tạo đối tượng ship để lưu vị trí"""
 
     def __init__(self, x, y, l):
         self.location = (x, y)
         self.length = l
 
     def __repr__(self):
-        """A nice representation of the Ship object, for debugging"""
+        """In ra thông tin của tàu"""
         return "<Ship Object: ({},{}),  Length {}>".format(*self.location, self.length)
 
 
 class Board(ABC):
-    """A abstract base class for boards"""
+    """Board là một đối tượng trừu tượng, sẽ được kế thừa bởi PlayerBoard và AIBoard"""
 
     def __init__(self, size=10, ship_sizes=[6, 4, 3, 3, 2]):
         self.size = size
@@ -28,7 +28,7 @@ class Board(ABC):
         self.misses_list = []
 
     def is_valid(self, ship):
-        """Checks whether a ship would be a valid placement on the board"""
+        """Kiểm tra xem tọa độ tàu hiện tại có bị trùng với tàu nào không"""
         x, y = ship.location
 
         if x < 0 or y < 0 or x >= self.size or y >= self.size:
@@ -40,7 +40,7 @@ class Board(ABC):
         return True
 
     def add_ship(self, ship: Ship):
-        """Adds a ship to the board"""
+        """Thêm tàu vào list"""
         if self.is_valid(ship):
             self.ships_list.append(ship)
             return True
@@ -48,7 +48,8 @@ class Board(ABC):
             return False
 
     def remove_ship(self, ship):
-        """Removes a ship from the board"""
+        """Xóa tàu khỏi Board khi không thể đặt tàu được hay tàu bị đánh chìm"""
+
         self.ships_list.remove(ship)
 
     def ships_overlap(self, ship1, ship2):
@@ -57,16 +58,16 @@ class Board(ABC):
         return False
 
     def get_ship(self, x, y):
-        """Gets a ship object from coordinates"""
+        """Lấy tàu theo tọa độ x y đã cho"""
         for ship in self.ships_list:
             if (x, y) == ship.location:
                 return ship
         return None
 
     def valid_target(self, x, y):
-        """Checks whether a set of coordinates is a valid shot
+        """Kiểm tra liệu tọa độ phát bắn hiện tại có hợp lệ hay không
 
-        Coordinates are within the board, and shot hasn't previously been taken
+        Hợp lệ khi tọa độ nằm trong biên và chưa được đánh dấu
         """
         if x not in range(self.size) or y not in range(self.size):
             return False
@@ -76,20 +77,23 @@ class Board(ABC):
         return True
 
     def shoot(self, x, y):
-        """Registers a shot on the board, saving to appropriate list"""
+        """Thực hiện bắn tàu"""
         if not self.valid_target(x, y):
             return False
+
+        """Nếu một tàu có tọa độ trùng với x y thì sẽ được thêm vào hit list và trả về"""
 
         for ship in self.ships_list:
             if (x, y) == ship.location:
                 self.hits_list.append((x, y))
                 return True
 
+        """Thêm vào miss list"""
         self.misses_list.append((x, y))
         return True
 
     def colour_grid(self, colours, include_ships=True):
-        """Calculates a colour representation of the board for display"""
+        """Tô màu cho Board dựa theo tọa độ tương ứng"""
         grid = [[colours["water"] for _ in range(self.size)] for _ in range(self.size)]
 
         if include_ships:
@@ -107,7 +111,7 @@ class Board(ABC):
 
     @property
     def gameover(self):
-        """Checks to see if all the ships have been fully hit"""
+        """Kiểm tra xem tọa độ các tàu trong list có nằm trong hit list hay không, nếu có thì trò chơi kết thúc"""
         for ship in self.ships_list:
             if ship.location not in self.hits_list:
                 return False
@@ -126,10 +130,10 @@ class Board(ABC):
 
 
 class PlayerBoard(Board):
-    """A Board for user input"""
+    """Phần giao diện bên người chơi, nằm ở trên"""
 
     def __init__(self, display, board_size, ship_sizes):
-        """Initialises the board by placing ships."""
+        """Yêu cầu người chơi chọn vị trí các tàu khi khởi tạo Board"""
         super().__init__(board_size, ship_sizes)
         self.display = display
 
@@ -137,11 +141,9 @@ class PlayerBoard(Board):
             self.display.show(None, self)
 
             if self.ship_to_place:
-                text = "Click where you want your {}-long ship to be:".format(
-                    self.ship_to_place
-                )
+                text = "Hãy đặt vị trí tàu theo ý muốn: "
             else:
-                text = "Click again to rotate a ship, or elsewhere if ready."
+                text = "Nhấp bất kì đâu để bắt đầu!"
             self.display.show_text(text, lower=True)
 
             x, y = self.display.get_input()
@@ -166,7 +168,6 @@ class PlayerBoard(Board):
 
     @property
     def ship_to_place(self):
-        """Returns a ship length that needs to be placed, if any"""
         placed_sizes = sorted(ship.length for ship in self.ships_list)
         sizes = sorted(self.ship_sizes)
 
@@ -177,10 +178,10 @@ class PlayerBoard(Board):
 
 
 class AIBoard(Board):
-    """A Board controlled by a AI"""
+    """Board của AI"""
 
     def __init__(self, board_size, ship_sizes):
-        """Initialises the board by randomly placing ships"""
+        """Dùng random để gắn vị trí tàu của AI khi khởi tạo"""
         super().__init__(board_size, ship_sizes)
         for ship_length in self.ship_sizes:
             ship_added = False
@@ -194,8 +195,15 @@ class AIBoard(Board):
 
 
 class Display:
-    """Class to handle PyGame input and output"""
+    """Đối tượng Display dùng để vẽ trò chơi lên màn hình"""
 
+    """dic colours dùng để đánh màu các đối tượng trong game
+        nước - xanh biển  
+        tàu - xám  
+        hit - đỏ
+        miss - xanh nhạt  
+        chữ - trắng
+    """
     colours = {
         "water": pygame.color.Color("blue"),
         "ship": pygame.color.Color("gray"),
@@ -206,6 +214,8 @@ class Display:
     }
 
     def __init__(self, board_size=10, cell_size=30, margin=15):
+        "Khởi tạo giao diện game bằng thư viện pygame"
+
         self.board_size = board_size
         self.cell_size = cell_size
         self.margin = margin
@@ -220,7 +230,10 @@ class Display:
         pygame.display.set_caption("Battleships")
 
     def show(self, upper_board, lower_board, include_top_ships=False):
-        """Requests appropriate COlour Grids from boards, and draws them"""
+        """Vẽ các board lên màn hình tương ứng từng đối tượng
+        Board trên - người chơi
+        Board dưới - AI
+        """
         if upper_board is not None:
             upper_colours = upper_board.colour_grid(self.colours, include_top_ships)
 
@@ -228,6 +241,8 @@ class Display:
             lower_colours = lower_board.colour_grid(self.colours)
 
         self.screen.fill(Display.colours["background"])
+
+        """Vẽ màu từng ô trên màn hình theo đối tượng tương ứng"""
         for y in range(self.board_size):
             for x in range(self.board_size):
                 if upper_board is not None:
@@ -256,7 +271,7 @@ class Display:
                     )
 
     def get_input(self):
-        """Converts MouseEvents into board corrdinates, for input"""
+        """Lấy tọa độ con trỏ chuột khi người chơi nhấn chuột"""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 Display.close()
@@ -270,7 +285,7 @@ class Display:
         return None, None
 
     def show_text(self, text, upper=False, lower=False):
-        """Displays text on the screen, either upper or lower"""
+        """Hiển thị chữ ra màn hình"""
         x = self.margin
         y_up = x
         y_lo = self.board_size * self.cell_size + self.margin
@@ -292,27 +307,27 @@ class Display:
 
 
 class Game:
-    """The overall class to control the game"""
+    """Đối tượng Game, quản lí các component của trò chơi"""
 
     def __init__(self, display, size=10, ship_sizes=[6, 4, 3, 3, 2]):
-        """Sets up the game by generating two Boards"""
+        """Set up game bằng khởi tạo 2 Board người chơi và AI"""
         self.display = display
         self.board_size = size
         self.ai_board = AIBoard(size, ship_sizes)
         self.player_board = PlayerBoard(display, size, ship_sizes)
 
     def play(self):
-        """The main game loop, alternating shots until someone wins"""
+        """Vòng lặp chính trong game, cho đến khi game kết thúc"""
         print("Play starts")
         while not self.gameover:
             if self.player_shot():
                 self.ai_shot()
             self.display.show(self.ai_board, self.player_board)
-            self.display.show_text("Click to guess:")
+            self.display.show_text("Nhấp để đoán:")
             Display.flip()
 
     def ai_shot(self):
-        """The AI's shot selection just randomly selects coordinates"""
+        """Dùng random để đoán vị trí tàu của người chơi"""
         x, y = -1, -1
         while not self.player_board.valid_target(x, y):
             x = random.randint(0, self.board_size - 1)
@@ -320,7 +335,7 @@ class Game:
         self.player_board.shoot(x, y)
 
     def player_shot(self):
-        """Uses input to decide if a shot is valid or not"""
+        """Kiểm tra xem input người chơi hợp lệ hay không"""
         x, y = self.display.get_input()
         if self.ai_board.valid_target(x, y):
             self.ai_board.shoot(x, y)
@@ -330,12 +345,12 @@ class Game:
 
     @property
     def gameover(self):
-        """Determines and prints the winner"""
+        """In ra người thắng"""
         if self.ai_board.gameover:
-            print("Congratulations you won")
+            print("Chúc mừng bạn thắng")
             return True
         elif self.player_board.gameover:
-            print("Congratulations you lost")
+            print("Bạn thua")
             return True
         else:
             return False
@@ -348,7 +363,7 @@ if __name__ == "__main__":
         # Game(d, 2, [1,1]).play()
         d.close()
 
-        response = input("Replay? y/n: ").lower()
+        response = input("Chơi lại y/n: ").lower()
         while response not in ["y", "n"]:
             response = input("Must be y or n: ")
         if response == "n":
