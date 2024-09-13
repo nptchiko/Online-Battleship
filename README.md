@@ -133,3 +133,8 @@
 + `cd Online-Battleship/demo`
 
 + `python3 demo.py`
+
+# Phân công
++ Nguyễn Phước Tiến - N22DCCN085 - Server-side(cấu hình socket, thiết kế các cổng endpoint)
++ Nguyễn Khánh Thiện - N22DCCN081 - Client-side(thiết kế giao diện và thao tác ngưởi dùng bằng Kotlin, cấu hình socket kết nối server)
++ Lưu Đức Đạt - N22DCCN019 - Server-side(thiết kế OOP cho các đối tượng trong trò chơi)
