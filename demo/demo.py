@@ -332,7 +332,7 @@ class Game:
         """Dùng random để đoán vị trí tàu của người chơi"""
         x, y = -1, -1
         while not self.player_board.valid_target(x, y):
-            x = random.randint(0, self.board_size - 1)
+            x = random.randint(0, self.bord_size - 1)
             y = random.randint(0, self.board_size - 1)
         self.player_board.shoot(x, y)
 
