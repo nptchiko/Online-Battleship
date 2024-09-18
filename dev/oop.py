@@ -1,4 +1,5 @@
 from enum import Enum
+import re
 import time
 import random
 
@@ -49,7 +50,7 @@ class Ship:
 
 
 class Board:
-    def __init__(self, size=10, shipSize=[1, 2, 3, 4, 5]):
+    def __init__(self, size=10):
         self.size = size
         self.shipSize = shipSize
         self.shipList: list = []
@@ -100,6 +101,8 @@ class Board:
 
         return True
 
+    def
+
     def __str__(self):
         return "size: {}, shipList: {}".format(self.size, self.shipList)
 
@@ -129,9 +132,20 @@ class User:
         self.room_request = room_request
         self.name = name
         self.isReady = False
+        self.role = "user"
+        # self.isInRoom = isInRoom
 
+    # def setIsAvailable(self, val: bool):
+    #     self.isInRoom = val
+    #
+    # def IsAvailable(self):
+    #     return self.isInRoom
+    #
     def setRoomRequest(self, rq: str):
         self.room_request = rq
+
+    def setRole(self, role: str):
+        self.role = role
 
     def setReady(self, val: bool):
         self.isReady = val
@@ -143,12 +157,8 @@ class User:
 
 
 class Player:
-    def __init__(self, board: Board):
-        self.board = board
-        self.user = None
-
-    def setUser(self, user: User):
-        self.user = user
+    def __init__(self):
+        self.board = Board()
 
     def shoot(self, x, y):
         # take input
@@ -166,16 +176,17 @@ class Player:
 
 
 class PlayerUser(Player):
-    def __init__(self, board: Board):
-        super().__init__(board)
+    def __init__(self, user: User):
+        super().__init__()
+        self.user = user
 
 
 class AIPlayer(Player):
-    def __init__(self, board: Board):
-        super().__init__(board)
-        self.cache: list = []
+    def __init__(self, cache: list = []):
+        super().__init__()
+        self.cache: list = cache
 
-    def shoot(self):
+    def shoot(self, x=0, y=0):
         coord = self.theBestAlgorithmInTheWorld()
         ship: Ship
         for ship in self.board.shipList:
@@ -215,25 +226,61 @@ class AIPlayer(Player):
         return x, y
 
 
+class Game:
+    def __init__(self, onlineUser: list = [], onlineRoom: list = []):
+        self.onlineUser: list = onlineUser
+        self.onlineRoom: list = onlineRoom
+
+    def addUser(self, uid):
+        self.onlineUser.append(uid)
+
+    def addRoom(self, data: dict):
+        room = Room(data["room_request"])
+        admin = User(data["uid"], data["room_request"], data["name"])
+        admin.setRole("admin")
+        room.accept(admin)
+        self.onlineRoom.append(room)
+
+
 class Room:
-    def __init__(self):
-        self.userInRoom: list = []
-        self.id: str = ""
-        self.turn: int = 0
+    def __init__(
+            self, id: str, userInRoom: list = [], game: Game = None):
+        self.userInRoom: list = userInRoom
+        self.id: str = id
+        self.game: Game = game
 
     def setId(self, id: str):
         self.id = id
 
-    def addUser(self, user: User):
-        self.userInRoom.append(user)
+    def accept(self, user: User):
+        if self.isRoomAvailable():
+            self.userInRoom.append(user)
 
-    def removeUser(self, uid):
-        user: User
+    def kick(self, uid):
         for user in self.userInRoom:
             if user.uid == uid:
                 self.userInRoom.remove(user)
                 return True
         return False
+
+    # def invite(self, request_id, uid):
+    #     user= self.getUserById(request_id)
+    #
+    #     if user is None or user.role != 'admin':
+    #         print('{} not found or not an admin'.format(request_id))
+    #         return False
+    #
+    #     _user: User
+    #     for _user in self.game.onlineUser:
+    #         if _user.uid == uid:
+    #             if _user.isInRoom:
+    #                 print('user is already in room')
+    #                 return False
+    #             else:
+    #                 self.accept(_user)
+    #                 print(' ')
+    #
+    #
 
     def getNumberOfUser(self):
         return len(self.userInRoom)
@@ -241,33 +288,64 @@ class Room:
     def checkAllReady(self):
         user: User
         for user in self.userInRoom:
-            if not user.isReady():
+            if not user.isReady:
                 return False
         return True
 
-    def checkRoomAvailable(self):
+    def isRoomAvailable(self):
         return len(self.userInRoom) < 2
 
-    def swapTurn(self):
-        return (self.turn + 1) % 2
-
-    def startNewRound(self):
+    def getUserById(self, uid):
         user: User
         for user in self.userInRoom:
-            user.setReady(False)
+            if user.uid == uid:
+                return user
+        return None
+
+    def startGame(self):
+        self.game = BattleShip(self.userInRoom)
 
     def __str__(self):
         return "id: {}, userInRoom: {}".format(self.id, self.userInRoom)
 
 
+class BattleShip(Game):
+    def __init__(self, userInRoom: list, players: list = [], turn: int = 0):
+        self.players: list = players
+        self.turn = turn
+
+        admin: User = userInRoom[0]
+        players.append(PlayerUser(admin))
+
+        if len(userInRoom) < 2:
+            players.append(AIPlayer())
+
+    def placeShip(self, request_id, data: list):
+        idx = self.indexOfUser(request_id)
+        if idx is None:
+            print('placeShip not work')
+            return False
+
+        for list in data:
+            self.players[idx].board.append(list)
+
+        return True
+
+    def indexOfUser(self, request_id):
+        if self.players[0].user.uid == request_id:
+            return 0
+        if isinstance(self.players[1], PlayerUser):
+            return 1
+        return None
+
+
 # ship = Ship(4, 4, 3, Direction.NORTH)
-# board = Board()
-# board.addShip(ship)
-# board.addShip(Ship(5, 5, 5, Direction.NORTH))
-# print(board.printBoard())
-# board.addShip(Ship(2, 7, 5, Direction.EAST))
-# player = AIPlayer(board)
-# player.setUser(User("001", "1", "bot"))
+#
+# player = AIPlayer()
+#
+# player.board.addShip(ship)
+# player.board.addShip(Ship(5, 5, 5, Direction.NORTH))
+# player.board.addShip(Ship(2, 7, 5, Direction.EAST))
 #
 # for i in range(1, 50):
 #     print(i)
@@ -276,9 +354,11 @@ class Room:
 #     time.sleep(1)
 
 
-user1 = User("123", "1", "Lucy")
-user2 = User("234", "1", "John")
-
-room = Room()
-room.addUser(user1)
-room.addUser(user2)
+# user1 = User("123", "1", "Lucy")
+# user2 = User("234", "1", "John")
+#
+# room = Room()
+# room.addUser(user1)
+# room.addUser(user2)
+#
+# print(room)
