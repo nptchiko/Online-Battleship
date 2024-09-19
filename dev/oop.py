@@ -101,8 +101,6 @@ class Board:
 
         return True
 
-    def
-
     def __str__(self):
         return "size: {}, shipList: {}".format(self.size, self.shipList)
 
@@ -160,7 +158,7 @@ class Player:
     def __init__(self):
         self.board = Board()
 
-    def shoot(self, x, y):
+    def isShot(self, x, y):
         # take input
         # example
         if self.board.isValidTarget(x, y):
@@ -170,9 +168,7 @@ class Player:
                     return 1
 
             self.board.missedList.append((x, y))
-            return 0
-
-        return -1
+        return 0
 
 
 class PlayerUser(Player):
@@ -186,8 +182,8 @@ class AIPlayer(Player):
         super().__init__()
         self.cache: list = cache
 
-    def shoot(self, x=0, y=0):
-        coord = self.theBestAlgorithmInTheWorld()
+    def isShot(self, x: int, y: int):
+        coord = (x, y)
         ship: Ship
         for ship in self.board.shipList:
             if coord in ship.coordList:
@@ -197,8 +193,11 @@ class AIPlayer(Player):
         self.board.missedList.append(coord)
         return 0
 
+    def shoot(self):
+        return self.theBestAlgorithmInTheWorld()
+
     def theBestAlgorithmInTheWorld(self):
-        print(self.cache)
+        # print(self.cache)
         while self.cache != []:
             cell = self.cache[0]
             if self.board.isValidTarget(cell[0] + 1, cell[1]):
@@ -215,6 +214,20 @@ class AIPlayer(Player):
             self.cache.pop(0)
 
         return self.takeRandom()
+
+    def autoPlaceShip(self):
+        lens: list = [1, 2, 3, 4, 5]
+
+        while lens is not []:
+            len: int = lens[0]
+            x: int = random.randint(0, 9)
+            y: int = random.randint(0, 9)
+            dir = Direction(random.randint(0, 3))
+            ship = Ship(x, y, len, dir)
+
+            if self.board.isValidPlacement(ship):
+                self.board.addShip(ship)
+                lens.pop(0)
 
     def takeRandom(self):
         x = 0
@@ -243,8 +256,7 @@ class Game:
 
 
 class Room:
-    def __init__(
-            self, id: str, userInRoom: list = [], game: Game = None):
+    def __init__(self, id: str, userInRoom: list = [], game: Game = None):
         self.userInRoom: list = userInRoom
         self.id: str = id
         self.game: Game = game
@@ -295,12 +307,11 @@ class Room:
     def isRoomAvailable(self):
         return len(self.userInRoom) < 2
 
-    def getUserById(self, uid):
-        user: User
-        for user in self.userInRoom:
-            if user.uid == uid:
-                return user
-        return None
+    def getIndxInRoom(self, request_id):
+        for i in range(2):
+            if self.userInRoom[i].uid == request_id:
+                return i
+        return -1
 
     def startGame(self):
         self.game = BattleShip(self.userInRoom)
@@ -323,7 +334,7 @@ class BattleShip(Game):
     def placeShip(self, request_id, data: list):
         idx = self.indexOfUser(request_id)
         if idx is None:
-            print('placeShip not work')
+            print("placeShip not work")
             return False
 
         for list in data:
@@ -337,6 +348,9 @@ class BattleShip(Game):
         if isinstance(self.players[1], PlayerUser):
             return 1
         return None
+
+    def swapTurn(self):
+        return (self.turn + 1) % 2
 
 
 # ship = Ship(4, 4, 3, Direction.NORTH)
