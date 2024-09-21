@@ -74,6 +74,9 @@ class Board:
                     return True
         return False
 
+    def isDefeated(self):
+        return len(self.hitList) >= 15
+
     def addShip(self, ship: Ship):
         if self.isValidPlacement(ship):
             self.shipList.append(ship)
@@ -125,7 +128,7 @@ class Board:
 
 
 class User:
-    def __init__(self, uid, room_request: str, name: str):
+    def __init__(self, uid, room_request: str = "", name: str = ""):
         self.uid = uid
         self.room_request = room_request
         self.name = name
@@ -159,8 +162,6 @@ class Player:
         self.board = Board()
 
     def isShot(self, x, y):
-        # take input
-        # example
         if self.board.isValidTarget(x, y):
             for ship in self.board.shipList:
                 if (x, y) in ship.coordList:
@@ -218,7 +219,7 @@ class AIPlayer(Player):
     def autoPlaceShip(self):
         lens: list = [1, 2, 3, 4, 5]
 
-        while lens is not []:
+        while lens != []:
             len: int = lens[0]
             x: int = random.randint(0, 9)
             y: int = random.randint(0, 9)
@@ -240,19 +241,27 @@ class AIPlayer(Player):
 
 
 class Game:
-    def __init__(self, onlineUser: list = [], onlineRoom: list = []):
-        self.onlineUser: list = onlineUser
-        self.onlineRoom: list = onlineRoom
+    def __init__(self, onlineUser: dict = {}, onlineRoom: dict = {}):
+        self.onlineUser: dict = onlineUser
+        self.onlineRoom: dict = onlineRoom
 
     def addUser(self, uid):
-        self.onlineUser.append(uid)
+        self.onlineUser[uid] = User(uid)
 
     def addRoom(self, data: dict):
-        room = Room(data["room_request"])
-        admin = User(data["uid"], data["room_request"], data["name"])
+        room = Room(data["room_id"])
+        admin = User(data["uid"])
+        admin.room_request = data["room_id"]
+        admin.name = data["name"]
         admin.setRole("admin")
         room.accept(admin)
-        self.onlineRoom.append(room)
+        self.onlineRoom[data["room_id"]] = room
+
+    def delUser(self, request_id):
+        self.onlineUser.pop(request_id)
+
+    def delRoom(self, room_id):
+        self.onlineRoom.pop(room_id)
 
 
 class Room:
@@ -267,6 +276,8 @@ class Room:
     def accept(self, user: User):
         if self.isRoomAvailable():
             self.userInRoom.append(user)
+            return True
+        return False
 
     def kick(self, uid):
         for user in self.userInRoom:
@@ -316,6 +327,12 @@ class Room:
     def startGame(self):
         self.game = BattleShip(self.userInRoom)
 
+    def startNewRound(self):
+        user: User
+        for user in self.userInRoom:
+            if isinstance(user, PlayerUser):
+                user.setReady(False)
+
     def __str__(self):
         return "id: {}, userInRoom: {}".format(self.id, self.userInRoom)
 
@@ -331,16 +348,9 @@ class BattleShip(Game):
         if len(userInRoom) < 2:
             players.append(AIPlayer())
 
-    def placeShip(self, request_id, data: list):
-        idx = self.indexOfUser(request_id)
-        if idx is None:
-            print("placeShip not work")
-            return False
-
-        for list in data:
-            self.players[idx].board.append(list)
-
-        return True
+    def placeShip(self, idx: int, data: dict):
+        for key in data.keys():
+            self.players[idx].board.append(data[key])
 
     def indexOfUser(self, request_id):
         if self.players[0].user.uid == request_id:
