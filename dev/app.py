@@ -21,6 +21,7 @@ server = Game()
 
 
 @socketio.event
+@socketio.on('connect')
 def connect():
     global server
     server.addUser(request.sid)
@@ -31,6 +32,7 @@ def connect():
 
 
 @socketio.event
+@socketio.on('disconnect')
 def disconnect():
     global server
 
@@ -96,5 +98,4 @@ def placedShip(data):
     global server
     server.onlineRoom[session["room"]].game.placedShip(data["idx"], data)
 
-
-socketio.run(app)
+socketio.run(app, host='0.0.0.0', port=5000) 
