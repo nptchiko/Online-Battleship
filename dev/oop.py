@@ -1,6 +1,4 @@
 from enum import Enum
-import re
-import time
 import random
 
 
@@ -20,28 +18,25 @@ class Ship:
         self.coord = (x, y)
         self.len = len
         self.dir = d
-
-    @property
-    def coordList(self):
-        x, y = self.coord
+        self.coordList: list = []
 
         if self.dir == Direction.NORTH:
-            return [(x, y - i) for i in range(0, self.len)]
+            self.coordList = [(x, y - i) for i in range(0, self.len)]
 
         elif self.dir == Direction.WEST:
-            return [(x - i, y) for i in range(0, self.len)]
+            self.coordList = [(x - i, y) for i in range(0, self.len)]
 
         elif self.dir == Direction.SOUTH:
-            return [(x, y + i) for i in range(0, self.len)]
+            self.coordList = [(x, y + i) for i in range(0, self.len)]
 
         elif self.dir == Direction.EAST:
-            return [(x + i, y) for i in range(0, self.len)]
+            self.coordList = [(x + i, y) for i in range(0, self.len)]
 
     def rotate(self):
         self.dir = self.dir.next
 
     def __str__(self):
-        return "Location: {}, len: {}, dir: {}\n".format(
+        return "Location: :{}, len: {}, dir: {}\n".format(
             self.coordList, self.len, self.dir
         )
 
@@ -52,7 +47,7 @@ class Ship:
 class Board:
     def __init__(self, size=10):
         self.size = size
-        self.shipSize = shipSize
+        self.shipSize: list = []
         self.shipList: list = []
         self.hitList: list = []
         self.missedList: list = []
@@ -74,15 +69,11 @@ class Board:
                     return True
         return False
 
-    def isDefeated(self):
-        return len(self.hitList) >= 15
-
     def addShip(self, ship: Ship):
         if self.isValidPlacement(ship):
             self.shipList.append(ship)
             return True
-        else:
-            return False
+        return False
 
     def removeShip(self, ship: Ship):
         self.shipList.remove(ship)
@@ -128,13 +119,11 @@ class Board:
 
 
 class User:
-    def __init__(self, uid, room_request: str = "", name: str = ""):
+    def __init__(self, uid, name: str = ""):
         self.uid = uid
-        self.room_request = room_request
-        self.name = name
-        self.isReady = False
-        self.role = "user"
-        # self.isInRoom = isInRoom
+        self.name: str = name
+        self.isReady: bool = False
+        self.room_request: str = ""
 
     # def setIsAvailable(self, val: bool):
     #     self.isInRoom = val
@@ -145,14 +134,8 @@ class User:
     def setRoomRequest(self, rq: str):
         self.room_request = rq
 
-    def setRole(self, role: str):
-        self.role = role
-
-    def setReady(self, val: bool):
-        self.isReady = val
-
     def __repr__(self):
-        return "uid: {}, room_request: {}, name: {}\n".format(
+        return "uid: {}, room: {},name: {}\n".format(
             self.uid, self.room_request, self.name
         )
 
@@ -161,15 +144,11 @@ class Player:
     def __init__(self):
         self.board = Board()
 
-    def isShot(self, x, y):
-        if self.board.isValidTarget(x, y):
-            for ship in self.board.shipList:
-                if (x, y) in ship.coordList:
-                    self.board.hitList.append((x, y))
-                    return 1
-
-            self.board.missedList.append((x, y))
-        return 0
+    def isHit(self, x: int, y: int):
+        for ship in self.board.shipList:
+            if (x, y) in ship.coordList:
+                return True
+        return False
 
 
 class PlayerUser(Player):
@@ -177,25 +156,45 @@ class PlayerUser(Player):
         super().__init__()
         self.user = user
 
+    def shoot(self, player: Player, coord: tuple):
+        result: bool = player.isHit(coord[0], coord[1])
+
+        if result:
+            self.board.hitList.append(coord)
+        else:
+            self.board.missedList.append(coord)
+        return {"coord": coord, "result": result}
+
 
 class AIPlayer(Player):
     def __init__(self, cache: list = []):
         super().__init__()
         self.cache: list = cache
 
-    def isShot(self, x: int, y: int):
-        coord = (x, y)
-        ship: Ship
-        for ship in self.board.shipList:
-            if coord in ship.coordList:
-                self.cache.append(coord)
-                self.board.hitList.append(coord)
-                return 1
-        self.board.missedList.append(coord)
-        return 0
+        lens: list = [1, 2, 3, 4, 5]
 
-    def shoot(self):
-        return self.theBestAlgorithmInTheWorld()
+        while lens != []:
+            len: int = lens[0]
+            x: int = random.randint(0, 9)
+            y: int = random.randint(0, 9)
+            dir = Direction(random.randint(0, 3))
+            ship = Ship(x, y, len, dir)
+
+            if self.board.isValidPlacement(ship):
+                self.board.addShip(ship)
+                lens.pop(0)
+
+    def shoot(self, player: Player):
+        coord: tuple = self.theBestAlgorithmInTheWorld()
+        result: bool = player.isHit(coord[0], coord[1])
+
+        if result:
+            self.board.hitList.append(coord)
+            self.cache.append(coord)
+        else:
+            self.board.missedList.append(coord)
+
+        return {"coord": coord, "result": result}
 
     def theBestAlgorithmInTheWorld(self):
         # print(self.cache)
@@ -216,31 +215,59 @@ class AIPlayer(Player):
 
         return self.takeRandom()
 
-    def autoPlaceShip(self):
-        lens: list = [1, 2, 3, 4, 5]
-
-        while lens != []:
-            len: int = lens[0]
-            x: int = random.randint(0, 9)
-            y: int = random.randint(0, 9)
-            dir = Direction(random.randint(0, 3))
-            ship = Ship(x, y, len, dir)
-
-            if self.board.isValidPlacement(ship):
-                self.board.addShip(ship)
-                lens.pop(0)
-
     def takeRandom(self):
         x = 0
         y = 0
-        while self.board.isValidTarget(x, y) == False:
+        while not self.board.isValidTarget(x, y):
             x = random.randint(0, self.board.size - 1)
             y = random.randint(0, self.board.size - 1)
 
-        return x, y
+        return (x, y)
 
 
-class Game:
+class Room:
+    def __init__(self, id: str):
+        self.userInRoom: dict = {}
+        self.id: str = id
+        self.game: Game
+
+    def accept(self, user: User):
+        if self.isRoomAvailable():
+            self.userInRoom[user.uid] = user
+            return True
+        return False
+
+    def kick(self, uid):
+        if self.userInRoom.get(uid) is None:
+            return False
+
+        self.userInRoom.pop(uid)
+        return True
+
+    def checkAllReady(self):
+        for key in self.userInRoom.keys():
+            if not self.userInRoom[key].isReady:
+                return False
+        return False
+
+    def isRoomAvailable(self):
+        return len(self.userInRoom) < 2
+
+    def startGame(self):
+        self.game = BattleShip(self.userInRoom)
+
+    def getNumberOfUser(self):
+        return len(self.userInRoom)
+
+    def startNewRound(self):
+        for key in self.userInRoom.keys():
+            self.userInRoom[key].isReady = False
+
+    def __str__(self):
+        return "id: {}, userInRoom: {}".format(self.id, self.userInRoom)
+
+
+class Server:
     def __init__(self, onlineUser: dict = {}, onlineRoom: dict = {}):
         self.onlineUser: dict = onlineUser
         self.onlineRoom: dict = onlineRoom
@@ -248,14 +275,10 @@ class Game:
     def addUser(self, uid):
         self.onlineUser[uid] = User(uid)
 
-    def addRoom(self, data: dict):
-        room = Room(data["room_id"])
-        admin = User(data["uid"])
-        admin.room_request = data["room_id"]
-        admin.name = data["name"]
-        admin.setRole("admin")
-        room.accept(admin)
-        self.onlineRoom[data["room_id"]] = room
+    def addRoom(self, user: User):
+        room: Room = Room(user.room_request)
+        room.accept(user)
+        self.onlineRoom[user.room_request] = room
 
     def delUser(self, request_id):
         self.onlineUser.pop(request_id)
@@ -264,103 +287,42 @@ class Game:
         self.onlineRoom.pop(room_id)
 
 
-class Room:
-    def __init__(self, id: str, userInRoom: list = [], game: Game = None):
-        self.userInRoom: list = userInRoom
-        self.id: str = id
-        self.game: Game = game
+class Game:
+    def __init__(self):
+        self.players: dict = {}
+        self.keys: list = []
+        self.turn
 
-    def setId(self, id: str):
-        self.id = id
-
-    def accept(self, user: User):
-        if self.isRoomAvailable():
-            self.userInRoom.append(user)
-            return True
-        return False
-
-    def kick(self, uid):
-        for user in self.userInRoom:
-            if user.uid == uid:
-                self.userInRoom.remove(user)
-                return True
-        return False
-
-    # def invite(self, request_id, uid):
-    #     user= self.getUserById(request_id)
-    #
-    #     if user is None or user.role != 'admin':
-    #         print('{} not found or not an admin'.format(request_id))
-    #         return False
-    #
-    #     _user: User
-    #     for _user in self.game.onlineUser:
-    #         if _user.uid == uid:
-    #             if _user.isInRoom:
-    #                 print('user is already in room')
-    #                 return False
-    #             else:
-    #                 self.accept(_user)
-    #                 print(' ')
-    #
-    #
-
-    def getNumberOfUser(self):
-        return len(self.userInRoom)
-
-    def checkAllReady(self):
-        user: User
-        for user in self.userInRoom:
-            if not user.isReady:
-                return False
-        return True
-
-    def isRoomAvailable(self):
-        return len(self.userInRoom) < 2
-
-    def getIndxInRoom(self, request_id):
-        for i in range(2):
-            if self.userInRoom[i].uid == request_id:
-                return i
-        return -1
-
-    def startGame(self):
-        self.game = BattleShip(self.userInRoom)
-
-    def startNewRound(self):
-        user: User
-        for user in self.userInRoom:
-            if isinstance(user, PlayerUser):
-                user.setReady(False)
-
-    def __str__(self):
-        return "id: {}, userInRoom: {}".format(self.id, self.userInRoom)
+    def rotate(self):
+        self.turn = self.keys[0]
+        self.keys.append(self.turn)
 
 
 class BattleShip(Game):
-    def __init__(self, userInRoom: list, players: list = [], turn: int = 0):
-        self.players: list = players
-        self.turn = turn
-
-        admin: User = userInRoom[0]
-        players.append(PlayerUser(admin))
+    def __init__(self, userInRoom: dict):
+        super().__init__()
+        for key in userInRoom.keys():
+            self.players[key] = PlayerUser(userInRoom[key])
+            self.keys.append(key)
 
         if len(userInRoom) < 2:
-            players.append(AIPlayer())
+            self.players["bot"] = AIPlayer()
+            self.keys.append("bot")
+        self.rotate()
 
-    def placeShip(self, idx: int, data: dict):
-        for key in data.keys():
-            self.players[idx].board.append(data[key])
+    def placeShip(self, data: dict):
+        info: dict = data["info"]
+        len: int = info["len"]
+        x: int = info["coord"]["x"]
+        y: int = info["coord"]["y"]
+        dir: int = info["dir"]
 
-    def indexOfUser(self, request_id):
-        if self.players[0].user.uid == request_id:
-            return 0
-        if isinstance(self.players[1], PlayerUser):
-            return 1
-        return None
+        ship = Ship(x, y, len, Direction(dir))
 
-    def swapTurn(self):
-        return (self.turn + 1) % 2
+        return self.players[self.turn].board.addShip(ship)
+
+    def isCurrentPlayerWin(self):
+        return len(self.players[self.turn].board.hitList) >= 15
 
 
 # ship = Ship(4, 4, 3, Direction.NORTH)
@@ -385,4 +347,4 @@ class BattleShip(Game):
 # room.addUser(user1)
 # room.addUser(user2)
 #
-# print(room)
+# print(room def autoPlaceShip(self):)
