@@ -1,5 +1,6 @@
 from enum import Enum
 import random
+from typing import Any
 
 
 class Direction(Enum):
@@ -18,7 +19,7 @@ class Ship:
         self.coord = (x, y)
         self.len = len
         self.dir = d
-        self.coordList: list = []
+        self.coordList: list[tuple] = []
 
         if self.dir == Direction.NORTH:
             self.coordList = [(x, y - i) for i in range(0, self.len)]
@@ -145,14 +146,14 @@ class Player:
         self.board = Board()
         self.placedShip: bool = False
 
-    def isHit(self, x: int, y: int):
+    def isHit(self, coord: tuple):
         for ship in self.board.shipList:
-            if (x, y) in ship.coordList:
+            if coord in ship.coordList:
                 return True
         return False
 
     def shoot(self, player, coord: tuple):
-        result: bool = player.isHit(coord[0], coord[1])
+        result: bool = player.isHit(coord)
 
         if result:
             self.board.hitList.append(coord)
@@ -166,11 +167,14 @@ class PlayerUser(Player):
         super().__init__()
         self.user = user
 
+    def __str__(self):
+        return "{}".format(self.user.name)
+
 
 class AIPlayer(Player):
     def __init__(self, cache: list = []):
         super().__init__()
-        self.cache: list = cache
+        self.cache: list[tuple] = cache
         self.placedShip = True
 
         lens: list = [1, 2, 3, 4, 5]
@@ -221,10 +225,13 @@ class AIPlayer(Player):
 
         return (x, y)
 
+    def __str__(self):
+        return "bot"
+
 
 class Room:
     def __init__(self, id: str):
-        self.userInRoom: dict = {}
+        self.userInRoom: dict[Any, User] = {}
         self.id: str = id
         self.game: Game
 
@@ -266,8 +273,8 @@ class Room:
 
 class Server:
     def __init__(self, onlineUser: dict = {}, onlineRoom: dict = {}):
-        self.onlineUser: dict = onlineUser
-        self.onlineRoom: dict = onlineRoom
+        self.onlineUser: dict[Any, User] = onlineUser
+        self.onlineRoom: dict[Any, Room] = onlineRoom
 
     def addUser(self, uid):
         self.onlineUser[uid] = User(uid)
@@ -286,12 +293,12 @@ class Server:
 
 class Game:
     def __init__(self):
-        self.players: dict = {}
+        self.players: dict[Any, Player] = {}
         self.keys: list = []
         self.turn = None
 
     def nextTurn(self):
-        self.turn = self.keys[0]
+        self.turn = self.keys.pop(0)
         self.keys.append(self.turn)
         return self.turn
 
@@ -310,16 +317,19 @@ class BattleShip(Game):
 
     def placeShip(self, data: dict, uid):
         for key in data.keys():
-            info: dict = data[key]
+            info: dict[str, Any] = data[key]
             len: int = info["len"]
             x: int = info["coord"]["x"]
             y: int = info["coord"]["y"]
             dir: int = info["dir"]
-
             ship = Ship(x, y, len, Direction(dir))
-            return self.players[uid].board.addShip(ship)
 
-    def isCurrentPlayerWin(self):
+            if not self.players[uid].board.addShip(ship):
+                return False
+
+        return True
+
+    def isCurrentPlayerWin(self, uid):
         return len(self.players[uid].board.hitList) >= 15
 
     def checkAllReady(self):

@@ -1,3 +1,4 @@
+import time
 from oop import *
 from flask import Flask, session, request
 from flask_socketio import SocketIO, emit, join_room, disconnect
@@ -32,93 +33,105 @@ def connect():
 @socketio.on("disconnect")
 def disconnect():
     global server
+    sid = request.sid
+    room = server.onlineRoom["room"]
 
     if session.get("room") is not None:
-        user: User = server.onlineUser[request.sid]
+        user = server.onlineUser[sid]
         print("{} left the room {}".format(user.name, session["room"]))
-        server.delUser(request.sid)
-        server.onlineRoom[session["room"]].kick(request.sid)
+        server.delUser(sid)
+        room.kick(sid)
 
-        if server.onlineRoom[session["room"]].getNumberOfUser() == 0:
+        if room.getNumberOfUser() == 0:
             server.delRoom(session["room"])
             print("room {} is deleted".format(session["room"]))
 
 
-@socketio.on("check-room-to-join")
+@socketio.on("check_room_to_join")
 def check_room(data):
     global server
-
     room_id = data["room"]
+    room = server.onlineRoom[room_id]
+    sid = request.sid
 
-    server.onlineUser[request.sid].name = data["name"]
-    server.onlineUser[request.sid].room_request = room_id
+    server.onlineUser[sid].name = data["name"]
+    server.onlineUser[sid].room_request = room_id
 
     if server.onlineRoom.get(room_id) is None:
-        server.addRoom(server.onlineUser[request.sid])
+        server.addRoom(server.onlineUser[sid])
         join_room(room_id)
-        emit("room_status", {"status": "accept"}, to=request.sid)
+        emit("room_status", {"status": "accept"}, to=sid)
 
     else:
-        flag = server.onlineRoom[room_id].accept(server.onlineUser[request.sid])
+        flag = room.accept(server.onlineUser[sid])
         if flag is True:
-            emit("room_status", {"status": "accept"}, to=request.sid)
+            emit("room_status", {"status": "accept"}, to=sid)
             join_room(room_id)
             print("added {} to room {}".format(data["name"], room_id))
         else:
-            emit("room_status", {"status": "full"}, to=request.sid)
+            emit("room_status", {"status": "full"}, to=sid)
             disconnect()
             print("room is full")
             return
 
-    print(server.onlineRoom[room_id])
+    print(room)
     session["name"] = data["name"]
     session["room"] = room_id
 
 
 ############### GAME PREPARATION ##################
-@socketio.on("readyToStart")
+@socketio.on("ready_to_start")
 def readyToStart(msg):
     global server
+    room = server.onlineRoom["room"]
+    sid = request.sid
 
-    if server.onlineRoom[session["room"]].isRoomAvailable():
-        emit("room_status", {"status": "need 2 players to play"}, to=request.sid)
+    if room.isRoomAvailable():
+        emit("room_status", {"status": "need 2 players to play"}, to=sid)
         print("not enough player")
         return
 
-    server.onlineRoom[session["room"]].userInRoom[request.sid].isReady = True
+    room.userInRoom[sid].isReady = True
 
-    if not server.onlineRoom[session["room"]].checkAllReady():
-        emit("room_status", {"status": "waiting for another player"}, to=request.sid)
+    if not room.checkAllReady():
+        emit("room_status", {"status": "waiting for another player"}, to=sid)
         print("not all ready")
         return
-    server.onlineRoom[session["room"]].startGame()
+    room.startNewRound()
+    room.startGame()
     emit("placeShip", to=session["room"])
     print("prepare for game")
 
 
-@socketio.on("play_with_bot")
+@socketio.on("ready_to_start_bot")
 def bot(msg):
     global server
-    if not server.onlineRoom[session["room"]].isRoomAvailable():
-        emit("room_status", {"status": "full"}, to=request.sid)
+    room = server.onlineRoom["room"]
+    sid = request.sid
+
+    if not room.isRoomAvailable():
+        emit("room_status", {"status": "full"}, to=sid)
         return
-    server.onlineRoom[session["room"]].startGame()
+    room.startGame()
     emit("placeShip", to=session["room"])
     print("added bot to room")
 
 
-@socketio.on("placeShip")
+@socketio.on("place_ship")
 def placedShip(data):
     global server
+    sid = request.sid
+    room = server.onlineRoom["room"].game
 
-    if server.onlineRoom[session["room"]].game.placeShip(data, request.sid):
-        server.onlineRoom[session["room"]].game.players[request.sid].placedShip = True
-        emit("room_status", {"status": "accepted"}, to=request.sid)
+    if room.placeShip(data, sid):
+        room.players[sid].placedShip = True
+        emit("room_status", {"status": "accepted"}, to=sid)
+        print(room.players[sid].board)
     else:
-        emit("room_status", {"status": "failed"}, to=request.sid)
-    if server.onlineRoom[session["room"]].game.checkAllReady():
+        emit("room_status", {"status": "failed"}, to=sid)
+    if room.checkAllReady():
         emit("start", to=session["room"])
-        emit("turn", to=server.onlineRoom["session"].game.turn)
+        emit("turn", to=room.turn)
         print("playing game")
 
 
@@ -128,27 +141,65 @@ def placedShip(data):
 @socketio.on("shoot")
 def shoot(data):
     global server
-    cur = server.onlineRoom[session["room"]].game.turn
-    next = server.onlineRoom[session["room"]].game.nextTurn()
-    ally = server.onlineRoom[session["room"]].game.players[cur]
-    enemy = server.onlineRoom[session["room"]].game.players[next]
 
-    context: dict = ally.shoot(enemy, data["coord"])
+    room = server.onlineRoom["room"]
+
+    cur = room.game.turn
+    next = room.game.nextTurn()
+    ally = room.game.players[cur]
+    enemy = room.game.players[next]
+
+    print("{} shot {}".format(ally, enemy))
+    context: dict = ally.shoot(enemy, (data["x"], data["y"]))
     emit("update_context", {"context": context, "my_turn": True}, to=cur)
     emit("update_context", {"context": context, "my_turn": False}, to=next)
 
     if context["result"]:
-        server.onlineRoom[session["room"]].game.nextTurn()
-        if cur == "bot":
-            shoot(ally.shoot(enemy, ally.theBestAlgorithmInTheWorld()))
-        else:
-            emit("turn", to=cur)
+        room.game.nextTurn()
+        emit("turn", to=cur)
+
+        if room.game.isCurrentPlayerWin(cur):
+            emit("end_game", {"win": True}, to=cur)
+            emit("end_game", {"win": False}, to=next)
     else:
-        if next == "bot":
-            shoot(enemy.shoot(ally, enemy.theBestAlgorithmInTheWorld()))
-        else:
-            emit("turn", to=next)
+        emit("turn", to=next)
     print("shoot successfully")
+
+
+@socketio.on("shoot_bot")
+def shoot_(data):
+    global server
+
+    room = server.onlineRoom["room"]
+
+    cur = room.game.turn
+    ally = room.game.players[cur]
+    bot: AIPlayer = room.game.players["bot"]
+
+    print("{} shot {}".format(ally, bot))
+    context: dict = ally.shoot(bot, (data["x"], data["y"]))
+    emit("update_context", {"context": context, "my_turn": True}, to=cur)
+
+    if context["result"]:
+        if room.game.isCurrentPlayerWin(cur):
+            emit("end_game", {"win": True}, to=cur)
+            return
+
+    else:
+        emit("update_context", {"context": context, "my_turn": False}, to=cur)
+        context: dict = bot.shoot(ally, bot.theBestAlgorithmInTheWorld())
+
+        while context["result"]:
+            emit("update_context", {"context": context, "my_turn": False}, to=cur)
+
+            if room.game.isCurrentPlayerWin("bot"):
+                emit("end_game", {"win": False}, to=cur)
+
+            context: dict = bot.shoot(ally, bot.theBestAlgorithmInTheWorld())
+            time.sleep(3)
+
+        emit("update_context", {"context": context, "my_turn": False}, to=cur)
+    emit("turn", to=cur)
 
 
 if __name__ == "__main__":
