@@ -143,6 +143,7 @@ class User:
 class Player:
     def __init__(self):
         self.board = Board()
+        self.placedShip: bool = False
 
     def isHit(self, x: int, y: int):
         for ship in self.board.shipList:
@@ -150,13 +151,7 @@ class Player:
                 return True
         return False
 
-
-class PlayerUser(Player):
-    def __init__(self, user: User):
-        super().__init__()
-        self.user = user
-
-    def shoot(self, player: Player, coord: tuple):
+    def shoot(self, player, coord: tuple):
         result: bool = player.isHit(coord[0], coord[1])
 
         if result:
@@ -166,10 +161,17 @@ class PlayerUser(Player):
         return {"coord": coord, "result": result}
 
 
+class PlayerUser(Player):
+    def __init__(self, user: User):
+        super().__init__()
+        self.user = user
+
+
 class AIPlayer(Player):
     def __init__(self, cache: list = []):
         super().__init__()
         self.cache: list = cache
+        self.placedShip = True
 
         lens: list = [1, 2, 3, 4, 5]
 
@@ -184,17 +186,12 @@ class AIPlayer(Player):
                 self.board.addShip(ship)
                 lens.pop(0)
 
-    def shoot(self, player: Player):
-        coord: tuple = self.theBestAlgorithmInTheWorld()
-        result: bool = player.isHit(coord[0], coord[1])
+    def shoot(self, player: Player, coord: tuple):
+        result = super().shoot(player, coord)
 
-        if result:
-            self.board.hitList.append(coord)
+        if result["result"]:
             self.cache.append(coord)
-        else:
-            self.board.missedList.append(coord)
-
-        return {"coord": coord, "result": result}
+        return result
 
     def theBestAlgorithmInTheWorld(self):
         # print(self.cache)
@@ -248,7 +245,7 @@ class Room:
         for key in self.userInRoom.keys():
             if not self.userInRoom[key].isReady:
                 return False
-        return False
+        return True
 
     def isRoomAvailable(self):
         return len(self.userInRoom) < 2
@@ -291,11 +288,12 @@ class Game:
     def __init__(self):
         self.players: dict = {}
         self.keys: list = []
-        self.turn
+        self.turn = None
 
-    def rotate(self):
+    def nextTurn(self):
         self.turn = self.keys[0]
         self.keys.append(self.turn)
+        return self.turn
 
 
 class BattleShip(Game):
@@ -308,21 +306,27 @@ class BattleShip(Game):
         if len(userInRoom) < 2:
             self.players["bot"] = AIPlayer()
             self.keys.append("bot")
-        self.rotate()
+        self.nextTurn()
 
-    def placeShip(self, data: dict):
-        info: dict = data["info"]
-        len: int = info["len"]
-        x: int = info["coord"]["x"]
-        y: int = info["coord"]["y"]
-        dir: int = info["dir"]
+    def placeShip(self, data: dict, uid):
+        for key in data.keys():
+            info: dict = data[key]
+            len: int = info["len"]
+            x: int = info["coord"]["x"]
+            y: int = info["coord"]["y"]
+            dir: int = info["dir"]
 
-        ship = Ship(x, y, len, Direction(dir))
-
-        return self.players[self.turn].board.addShip(ship)
+            ship = Ship(x, y, len, Direction(dir))
+            return self.players[uid].board.addShip(ship)
 
     def isCurrentPlayerWin(self):
-        return len(self.players[self.turn].board.hitList) >= 15
+        return len(self.players[uid].board.hitList) >= 15
+
+    def checkAllReady(self):
+        for key in self.players.keys():
+            if not self.players[key].placedShip:
+                return False
+        return True
 
 
 # ship = Ship(4, 4, 3, Direction.NORTH)
