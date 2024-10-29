@@ -35,17 +35,19 @@ def connect():
 def disconnect():
     global server
     sid = request.sid
-    room = server.onlineRoom["room"]
 
     if session.get("room") is not None:
+        room = server.onlineRoom[session["room"]]
         user = server.onlineUser[sid]
         print("{} left the room {}".format(user.name, session["room"]))
-        server.delUser(sid)
+        
         room.kick(sid)
 
         if room.getNumberOfUser() == 0:
             server.delRoom(session["room"])
             print("room {} is deleted".format(session["room"]))
+    print("Player {} left the game".format(server.onlineUser[sid].name))
+    server.delUser(sid)
 
 
 @socketio.on("check_room_to_join")
@@ -82,14 +84,14 @@ def check_room(data):
             emit("room_status", {"status": "03", "name": server.onlineUser[request.sid].name}, to=admin.uid)
             
             join_room(room_id)
-            print("added {} to room {}".format(data["name"], room_id))
+            
         else:
             emit("room_status", {"status": "00"}, to=sid)
             disconnect()
             print("room is full")
             return
 
-
+    print("added {} to room {}\n".format(data["name"], room_id))
     session["name"] = data["name"]
     session["room"] = room_id
 
@@ -121,8 +123,9 @@ def readyToStart(msg):
 @socketio.on("ready_to_start_bot")
 def bot(msg):
     global server
-    room = server.onlineRoom["room"]
+    
     sid = request.sid
+    room = server.onlineRoom[session['room']]
 
     if not room.isRoomAvailable():
         emit("room_status", {"status": "00"}, to=sid)       # 00: full
