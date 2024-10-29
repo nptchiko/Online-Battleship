@@ -1,4 +1,5 @@
 import time
+import json
 from oop import *
 from flask import Flask, session, request
 from flask_socketio import SocketIO, emit, join_room, disconnect
@@ -49,9 +50,10 @@ def disconnect():
 
 @socketio.on("check_room_to_join")
 def check_room(data):
+    data = json.loads(data)
     global server
     room_id = data["room"]
-    room = server.onlineRoom[room_id]
+    
     sid = request.sid
 
     server.onlineUser[sid].name = data["name"]
@@ -60,21 +62,34 @@ def check_room(data):
     if server.onlineRoom.get(room_id) is None:
         server.addRoom(server.onlineUser[sid])
         join_room(room_id)
-        emit("room_status", {"status": "accept"}, to=sid)
-
+        emit("room_status", {"status": "01"}, to=sid)
+    # status_code:
+        # 01: admin
+        # 02: guest
+        # 03: another player joivn
+        # 00: full
     else:
+        room = server.onlineRoom[room_id]
         flag = room.accept(server.onlineUser[sid])
+        
+        admin : User
+        for key in room.userInRoom.keys():
+            if room.userInRoom[key].uid != request.sid:
+                admin = room.userInRoom[key]
+
         if flag is True:
-            emit("room_status", {"status": "accept"}, to=sid)
+            emit("room_status", {"status": "02", "name": admin.name}, to=sid)
+            emit("room_status", {"status": "03", "name": server.onlineUser[request.sid].name}, to=admin.uid)
+            
             join_room(room_id)
             print("added {} to room {}".format(data["name"], room_id))
         else:
-            emit("room_status", {"status": "full"}, to=sid)
+            emit("room_status", {"status": "00"}, to=sid)
             disconnect()
             print("room is full")
             return
 
-    print(room)
+
     session["name"] = data["name"]
     session["room"] = room_id
 
@@ -110,8 +125,11 @@ def bot(msg):
     sid = request.sid
 
     if not room.isRoomAvailable():
-        emit("room_status", {"status": "full"}, to=sid)
+        emit("room_status", {"status": "00"}, to=sid)       # 00: full
         return
+    else:
+        emit("room_status", {"status": "03", "name": "Miku Bot"}, to=sid)   
+        #xác nhận add bot thành công và coi bot như opp của admin phòng
     room.startGame()
     emit("placeShip", to=session["room"])
     print("added bot to room")
