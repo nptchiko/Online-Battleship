@@ -100,7 +100,7 @@ def check_room(data):
 @socketio.on("ready_to_start")
 def readyToStart(msg):
     global server
-    room = server.onlineRoom["room"]
+    room = server.onlineRoom[session['room']]
     sid = request.sid
 
     if room.isRoomAvailable():
@@ -142,10 +142,11 @@ def bot(msg):
 def placedShip(data):
     global server
     sid = request.sid
-    room = server.onlineRoom["room"].game
+    room = server.onlineRoom[session['room']].game
 
     if room.placeShip(data, sid):
-        room.players[sid].placedShip = True
+        if len(room.players[sid].board.shipList) >= 5:
+            room.players[sid].placedShip = True
         emit("room_status", {"status": "accepted"}, to=sid)
         print(room.players[sid].board)
     else:
@@ -163,7 +164,7 @@ def placedShip(data):
 def shoot(data):
     global server
 
-    room = server.onlineRoom["room"]
+    room = server.onlineRoom[session['room']]
 
     cur = room.game.turn
     next = room.game.nextTurn()
@@ -191,12 +192,12 @@ def shoot(data):
 def shoot_(data):
     global server
 
-    room = server.onlineRoom["room"]
+    room = server.onlineRoom[session['room']]
 
     cur = room.game.turn
     ally = room.game.players[cur]
     bot: AIPlayer = room.game.players["bot"]
-
+    
     print("{} shot {}".format(ally, bot))
     context: dict = ally.shoot(bot, (data["x"], data["y"]))
     emit("update_context", {"context": context, "my_turn": True}, to=cur)
