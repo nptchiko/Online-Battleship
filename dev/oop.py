@@ -330,7 +330,7 @@ class BattleShip(Game):
         return True
 
     def isCurrentPlayerWin(self, uid):
-        return len(self.players[uid].board.hitList) >= 20
+        return len(self.players[uid].board.hitList) >= 15
 
     def checkAllReady(self):
         for key in self.players.keys():
