@@ -140,6 +140,7 @@ def bot(msg):
 
 @socketio.on("place_ship")
 def placedShip(data):
+    data = json.loads(data)
     global server
     sid = request.sid
     room = server.onlineRoom[session['room']].game
@@ -190,6 +191,7 @@ def shoot(data):
 
 @socketio.on("shoot_bot")
 def shoot_(data):
+    data = json.loads(data)
     global server
 
     room = server.onlineRoom[session['room']]
@@ -208,17 +210,19 @@ def shoot_(data):
             return
 
     else:
-        emit("update_context", {"context": context, "my_turn": False}, to=cur)
+        # emit("update_context", {"context": context, "my_turn": False}, to=cur)
+        print("bot ban \n")
         context: dict = bot.shoot(ally, bot.theBestAlgorithmInTheWorld())
-
+        time.sleep(3)
+        
         while context["result"]:
             emit("update_context", {"context": context, "my_turn": False}, to=cur)
+            print("bot ban lien tuc \n")
 
             if room.game.isCurrentPlayerWin("bot"):
                 emit("end_game", {"win": False}, to=cur)
 
             context: dict = bot.shoot(ally, bot.theBestAlgorithmInTheWorld())
-            time.sleep(3)
 
         emit("update_context", {"context": context, "my_turn": False}, to=cur)
     emit("turn", to=cur)
