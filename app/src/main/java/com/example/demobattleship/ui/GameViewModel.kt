@@ -47,8 +47,8 @@ class GameViewModel: ViewModel() {
                 callFactory = clientBuilder.build()     // tăng thời gian timeout len vo han
 //                transports = arrayOf(WebSocket.NAME)
             }
-//            socket = IO.socket("https://stallion-special-lamb.ngrok-free.app", options)
-                socket = IO.socket("http://192.168.88.212:5000", options)
+            socket = IO.socket("https://stallion-special-lamb.ngrok-free.app", options)
+//                socket = IO.socket("http://192.168.88.212:5000", options)
         } catch (e: URISyntaxException) {
             Log.e("Socket", "URISyntaxException: ${e.message}")
             throw RuntimeException(e)
