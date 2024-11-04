@@ -1,10 +1,9 @@
 package com.example.demobattleship
 
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -63,7 +62,8 @@ fun BattleShipApp(
             GameScreen(
                 context = context,
                 gameViewModel = gameViewModel,
-                battleViewModel = battleViewModel
+                battleViewModel = battleViewModel,
+                preYourBoard = placeShipViewModel.placeShipBoard.collectAsState()
             )
         }
     }

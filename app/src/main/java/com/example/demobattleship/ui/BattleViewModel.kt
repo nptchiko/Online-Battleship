@@ -29,6 +29,12 @@ class BattleViewModel: ViewModel() {
         Log.d("turn: ", "player")
     }
 
+    fun updateGameResult(win: Boolean) {
+        _turnState.value = _turnState.value.copy(
+            gameResult = if (win) "win" else "lose"
+        )
+    }
+
     @Synchronized
     fun listenShootResult(socket: Socket) {
         socket.off("update_context")
@@ -54,11 +60,9 @@ class BattleViewModel: ViewModel() {
                 Log.d("bot ban", "bot ban")
             }
 
-            if (result == false) {
-                _turnState.value = _turnState.value.copy(
-                    yourTurn = !myTurn
-                )
-            }
+            _turnState.value = _turnState.value.copy(
+                yourTurn = if (result) myTurn else !myTurn
+            )
         }
     }
 
