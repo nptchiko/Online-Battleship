@@ -163,6 +163,7 @@ def placedShip(data):
 
 @socketio.on("shoot")
 def shoot(data):
+    data = json.loads(data)
     global server
 
     room = server.onlineRoom[session['room']]
