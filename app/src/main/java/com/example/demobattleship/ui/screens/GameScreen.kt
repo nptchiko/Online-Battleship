@@ -237,9 +237,13 @@ fun GameScreen(
                                 .size(25.dp)
                                 .border(0.01.dp, color = Color.Gray)
                                 .clickable(enabled = turnState.yourTurn) {
-                                    val selectedCoor: String =
-                                        "" + (65 + x).toChar() + (48 + y).toChar()
-                                    battleViewModel.shootBot(x, y, gameViewModel.socket)
+                                    if (gameViewModel.playingWithBot()) {
+                                        battleViewModel.shootBot(x, y, gameViewModel.socket)
+                                    }
+                                    else {
+                                        battleViewModel.shoot(x, y, gameViewModel.socket)
+                                    }
+
 //                                placeShipViewModel.selectCoor(selectedCoor)
                                 },
 

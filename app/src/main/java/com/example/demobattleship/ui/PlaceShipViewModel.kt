@@ -15,6 +15,20 @@ import kotlinx.coroutines.flow.asStateFlow
 class PlaceShipViewModel: ViewModel() {
     var shipList: MutableList<JsonObject> = mutableListOf()
 
+    private val _gameStartConfirmed = MutableStateFlow(false)
+    val gameStartConfirmed: StateFlow<Boolean> = _gameStartConfirmed.asStateFlow()
+
+    fun confirmGameStart() {
+        _gameStartConfirmed.value = true
+    }
+
+    private val _inWaiting = MutableStateFlow(false)
+    val inWaiting: StateFlow<Boolean> = _inWaiting.asStateFlow()
+
+    fun updateInWaiting() {
+        _inWaiting.value = true
+    }
+
     private val _placeShipBoard = MutableStateFlow(MutableList(10) {MutableList<CoorPlaceShip> (10) { CoorPlaceShip() } })
     val placeShipBoard: StateFlow<MutableList<MutableList<CoorPlaceShip>>> = _placeShipBoard.asStateFlow()
 

@@ -75,6 +75,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.example.demobattleship.MainActivity
 import com.example.demobattleship.R
 import com.example.demobattleship.data.DataResource
@@ -171,6 +173,7 @@ fun errorInput(input: String): Boolean {
 @Composable
 fun PlaceShipScreen(
     context: Context,
+    navController: NavController,
     onNextButtonClicked: () -> Unit,
     placeShipViewModel: PlaceShipViewModel,
     gameViewModel: GameViewModel,
@@ -352,12 +355,22 @@ fun PlaceShipScreen(
                     }
                 }
                 else {
-
+                    val gameStartConfirmed by placeShipViewModel.gameStartConfirmed.collectAsState()
+                    val inWaiting by placeShipViewModel.inWaiting.collectAsState()
                     Button(
+                        enabled = !inWaiting,
                         onClick = onNextButtonClicked
                     ) {
                         Text(text = "START", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     }
+                    if (!gameViewModel.playingWithBot() && inWaiting) {
+                        Text(text = "Waiting for your opp...")
+                    }
+                    if (!gameViewModel.playingWithBot() && gameStartConfirmed) {
+                        navController.navigate("GameScreen")
+                        gameViewModel.socket.off("start")
+                    }
+
                 }
 
 
@@ -376,11 +389,11 @@ fun Hah() {
     DemoBattleShipTheme {
 //        BoardScreen(board = DataResource().loadBoard())
 //        HomeScreen(context = LocalContext.current)
-        PlaceShipScreen(
-            context = LocalContext.current,
-            onNextButtonClicked = {},
-            placeShipViewModel = PlaceShipViewModel(),
-            gameViewModel = GameViewModel()
-        )
+//        PlaceShipScreen(
+//            context = LocalContext.current,
+//            onNextButtonClicked = {},
+//            placeShipViewModel = PlaceShipViewModel(),
+//            gameViewModel = GameViewModel()
+//        )
     }
 }

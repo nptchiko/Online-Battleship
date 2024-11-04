@@ -75,4 +75,14 @@ class BattleViewModel: ViewModel() {
         socket.emit("shoot_bot", dataEmit.toString())
         Log.d("shoot bot", "success")
     }
+
+    @Synchronized
+    fun shoot(x: Int, y: Int, socket: Socket) {
+        val dataEmit = JsonObject().apply {
+            addProperty("x", x)
+            addProperty("y", y)
+        }
+        socket.emit("shoot", dataEmit.toString())
+        Log.d("shoot bot", "success")
+    }
 }

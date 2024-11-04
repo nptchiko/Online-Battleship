@@ -28,6 +28,7 @@ class GameViewModel: ViewModel() {
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
     private val _sid = MutableStateFlow<String>("")
 
+    var gameStart: Boolean = false
     var socket: Socket
     val gson = Gson()
     val mapAdapter = gson.getAdapter(object: TypeToken<Map<String, Any?>>() {})
@@ -124,5 +125,8 @@ class GameViewModel: ViewModel() {
         Log.d("send ship", "send thanh cong")
     }
 
+    fun playingWithBot(): Boolean {
+        return _uiState.value.playWithBot
+    }
 
 }

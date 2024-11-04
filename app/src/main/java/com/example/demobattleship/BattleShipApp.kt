@@ -27,7 +27,9 @@ fun BattleShipApp(
         gameViewModel.socket.on("turn") {
             battleViewModel.updateTurn()
             battleViewModel.listenShootResult(gameViewModel.socket)
+
         }
+
     }
     NavHost(
         navController = navController,
@@ -47,12 +49,26 @@ fun BattleShipApp(
         composable(route = "PlaceShip") {
             PlaceShipScreen(
                 context = context,
+                navController = navController,
                 onNextButtonClicked = {
                     gameViewModel.sendShipList(placeShipViewModel.shipList)
                     // TODO
+                    if (!gameViewModel.playingWithBot()) {
+                        placeShipViewModel.updateInWaiting()
+                        gameViewModel.socket.on("start") {
+                            placeShipViewModel.confirmGameStart()
+                        }
+//                        if (placeShipViewModel.gameStartConfirmed.value) {
+//                            navController.navigate("GameScreen")
+//                            gameViewModel.socket.off("start")
+//                        }
+////                        gameViewModel.socket.off("start")
+                    }
+                    else {
+                        navController.navigate("GameScreen")
+                    }
 
 
-                    navController.navigate("GameScreen")
                 },
                 placeShipViewModel = placeShipViewModel,
                 gameViewModel = gameViewModel
