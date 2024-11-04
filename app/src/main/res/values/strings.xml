@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">DemoBattleShip</string>
+    <string name="label">Room ID</string>
+    <string name="enter_room_id">Enter room id</string>
+    <string name="join_room">Join</string>
+    <string name="add_bot">Play with Bot</string>
+    <string name="waiting">Waiting for other players...</string>
+    <string name="support_text">*contains only 6 digits</string>
+</resources>
