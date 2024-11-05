@@ -236,7 +236,7 @@ fun GameScreen(
                             modifier = Modifier
                                 .size(25.dp)
                                 .border(0.01.dp, color = Color.Gray)
-                                .clickable(enabled = turnState.yourTurn) {
+                                .clickable(enabled = turnState.yourTurn && oppBoard[x][y].shipType == 0) {
                                     if (gameViewModel.playingWithBot()) {
                                         battleViewModel.shootBot(x, y, gameViewModel.socket)
                                     }
