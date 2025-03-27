@@ -1,5 +1,5 @@
 # Đề tài:
-**Online Battleship Game Using Flask-SocketIO in Android**
+**Applying Rule-Based Algorithm And Probability-Based Online Battleship Game Using Flask-SocketIO**
 # Khái quát:
 **Battleship là trò chơi nổi tiếng 2 người chơi thể loại board game. Trò chơi được tổ chức trên 1 bảng vuông với 10x10 ô, mỗi ô sẽ đại diện cho tàu hoặc biển. Mỗi người chơi sẽ được 5 con tàu với kích thước 1x1 ô và mục tiêu chính của game là đánh chìm toàn bộ thuyền của đối phương bằng cách đánh bom, người đầu tiên hoàn thành sẽ là người chiến thắng.**
 
@@ -136,5 +136,6 @@
 
 # Phân công
 + Nguyễn Phước Tiến - N22DCCN085 - Server-side(cấu hình socket, thiết kế các cổng endpoint)
-+ Nguyễn Khánh Thiện - N22DCCN081 - Client-side(thiết kế giao diện và thao tác ngưởi dùng bằng Kotlin, cấu hình socket kết nối server)
-+ Lưu Đức Đạt - N22DCCN019 - Server-side(thiết kế OOP cho các đối tượng trong trò chơi)
++ Huỳnh Minh Thịnh - N22DCCN082
++ Lâm Nhật Minh - N22DCCN052
++ Nguyễn Văn Hậu - N22DCCN028
