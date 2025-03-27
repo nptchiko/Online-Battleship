@@ -1,5 +1,5 @@
 # Đề tài:
-**Applying Rule-Based Algorithm And Probability-Based Online Battleship Game Using Flask-SocketIO**
+**Applying Rule-Based Algorithm And Probability-Based In Online Battleship Game Using Flask-SocketIO**
 # Khái quát:
 **Battleship là trò chơi nổi tiếng 2 người chơi thể loại board game. Trò chơi được tổ chức trên 1 bảng vuông với 10x10 ô, mỗi ô sẽ đại diện cho tàu hoặc biển. Mỗi người chơi sẽ được 5 con tàu với kích thước 1x1 ô và mục tiêu chính của game là đánh chìm toàn bộ thuyền của đối phương bằng cách đánh bom, người đầu tiên hoàn thành sẽ là người chiến thắng.**
 
