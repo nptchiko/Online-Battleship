@@ -14,23 +14,26 @@
 ![New Project](https://github.com/user-attachments/assets/46fa7fcd-b8e6-4438-9bde-d20e29372605)
 
 # Bài toán đặt ra:
-### Vấn đề:
-+ Tính năng online nhiều người chơi trong trò chơi
-
-+ Giao diện, thao tác và xử lí các sự kiện trong trò chơi
-
-+ Đồng bộ nội dung trên 2 thiêt bị giữa hai người chơi với nhau
-
+### Vấn đề 
+- Triển khai tính năng chơi đa người trực tuyến với đồng bộ thời gian thực.
+- Thiết kế giao diện trực quan, xử lý tương tác người chơi và sự kiện trò chơi bằng Tkinter.
+- Tích hợp thuật toán AI để tạo ra đối thủ máy thông minh và thích nghi.
+- Đảm bảo đồng bộ mượt mà giữa các client (người chơi hoặc AI) và server.
 ### Đầu vào:
-+ Phần lớn thao tác trong trò chơi sẽ là `nhấp`, `thả`, `nhấn` và nên dữ liệu cần quan tâm ở là tọa độ của con trỏ chuột/ngón tay của người màn hình trên màn hình
-
+- Hành động người chơi: `nhấp chuột` và `kéo` thông qua tương tác chuột trên giao diện Tkinter.
+- Dữ liệu chính: Tọa độ của con trỏ chuột trên màn hình.
 ### Đầu ra:
-+ Dựa trên dữ liệu đầu vào, trò chơi sẽ đưa ra các sự kiện khác nhau.
-
+- Dựa trên tọa độ đầu vào, trò chơi kích hoạt các sự kiện:
+  - Không phản hồi nếu tọa độ nằm ngoài vùng hitbox của lưới.
+  - Thông báo `hit` nếu ô được chọn chứa tàu, hoặc `miss` nếu không.
+  - Phản hồi từ AI trong chế độ chơi đơn, tự xác định nước đi của nó.
 **Ví dụ như:**
 
 + Nếu tọa độ vượt ra ngoài hitbox(vùng không gian có thể xử lí) thì trò chơi sẽ không phản hồi.
 + Nếu tọa độ người chơi đã chọn là tàu thì trò chơi sẽ thông báo người chơi đã bắn trúng...
+
+### Tăng cường AI
+Dự án này mở rộng trò chơi truyền thống bằng cách tích hợp **đối thủ AI** sử dụng **thuật toán dựa trên quy tắc** và **thuật toán dựa trên xác suất**, cho phép chơi đơn hoặc nâng cao trải nghiệm chơi đa người với các thử thách do AI tạo ra.
 
 ### Thuật toán:
 
@@ -43,16 +46,28 @@
       + Cho x = x/16(lấy phần nguyên)
       + Cho y = y/16(lấy phần nguyên)
       + Ta có thể trả về tọa độ ô đang trỏ đến => x,y
+#### Thuật toán AI
+1. **Thuật toán Dựa trên Quy tắc**
+   - **Sắp xếp tàu:** Đặt tàu ngẫu nhiên, đảm bảo không chồng lấn.
+   - **Nhắm mục tiêu:**
+     - *Chế độ Săn:* Chọn ngẫu nhiên các ô chưa đánh cho đến khi trúng.
+     - *Chế độ Tiêu diệt:* Sau khi trúng, nhắm tuần tự vào các ô liền kề (lên, xuống, trái, phải) cho đến khi đánh chìm tàu, sau đó quay lại chế độ săn.
 
+2. **Thuật toán Dựa trên Xác suất**
+   - **Sắp xếp tàu:** Đặt tàu một cách chiến lược dựa trên mẫu lưới hoặc ngẫu nhiên.
+   - **Nhắm mục tiêu:**
+     - Xây dựng bản đồ xác suất cho mỗi ô chưa đánh.
+     - Đếm số cấu hình tàu hợp lệ (dựa trên kích thước tàu còn lại) chồng lấn lên mỗi ô.
+     - Cập nhật xác suất sau mỗi lần trúng/trượt (ví dụ: đặt xác suất ô trượt về 0, tăng xác suất ô liền kề ô trúng).
+     - Nhắm vào ô có xác suất cao nhất.
 ### Hướng giải quyết:
 + Trò chơi được xây dựng theo kiến trúc client-server trên giao thức socket để tạo giao tiếp event-base, hai chiều, độ trễ thấp giữa client (Người chơi) và server (Máy chủ)
 
 **Server-side: Flask(python framework), Flask-SocketIO(library supporting Flask)**
 + Trong trò chơi, việc xử lí dự liệu từ client gửi về, quản lí các giao tiếp giữa những người chơi, các phòng chứa người chơi, đảm bảo tính đồng bộ giữa các client với nhau,... được chịu trách nhiệm bới một server(máy chủ). **Flask** và **Flask-SocketIO** sẽ chịu trách nhiệm tạo server.
   
-**Client-side: Kotlin(Android programming language)**
-+ Thiết kế toàn bộ giao diện của trò chơi, tiếp nhận dữ liệu và các thao tác từ người chơi. Đồng thời tạo client giao tiếp với server với sự hỗ trợ của Socket, lắng nghe phản hồi từ server và trả về dữ liệu cho server. 
-# Triển khai ý tưởng: Miku đẹp trai
++ **Phía Client:** Tkinter (thư viện GUI desktop Python)
+  + Xây dựng giao diện trò chơi dưới dạng ứng dụng desktop, xử lý đầu vào người chơi qua sự kiện chuột, và giao tiếp với server bằng socket. Hiển thị nước đi của AI và đồng bộ trạng thái trò chơi.# Triển khai ý tưởng: Miku đẹp trai
 ![image](https://github.com/user-attachments/assets/53ec1e46-8451-4a81-bd91-bf257e8f36ae)
 
 **1. Khởi tạo server và client**
