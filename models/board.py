@@ -64,6 +64,7 @@ class Board:
                 return False
         
         # Check if the ship would overlap with another ship
+        # Note: We only check for direct overlap, not adjacency
         for i in range(ship_size):
             r, c = row, col
             if orientation == Orientation.HORIZONTAL:
@@ -74,14 +75,6 @@ class Board:
             # Check if the cell already has a ship
             if self.grid[r][c].has_ship():
                 return False
-            
-            # Check adjacent cells (optional, for spacing between ships)
-            for dr in [-1, 0, 1]:
-                for dc in [-1, 0, 1]:
-                    nr, nc = r + dr, c + dc
-                    if (0 <= nr < self.size and 0 <= nc < self.size and 
-                        (nr != r or nc != c) and self.grid[nr][nc].has_ship()):
-                        return False
         
         return True
     

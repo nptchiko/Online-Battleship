@@ -14,6 +14,7 @@ class GameView(tk.Tk):
         
         self.title("Battleship Game")
         self.resizable(False, False)
+        self.configure(bg="#f0f0f0")  # Light background for the main window
         
         self.game_state = None
         self.ai_strategy = None
@@ -26,25 +27,42 @@ class GameView(tk.Tk):
     
     def _create_widgets(self):
         """Create the game view widgets."""
-        # Main frame
-        main_frame = ttk.Frame(self, padding=10)
+        # Main frame with improved styling
+        main_frame = ttk.Frame(self, padding=15)
         main_frame.pack(fill="both", expand=True)
+        
+        # Game title
+        title_label = ttk.Label(
+            main_frame, 
+            text="BATTLESHIP", 
+            font=("Arial", 18, "bold"),
+            foreground="#003366"
+        )
+        title_label.pack(pady=(0, 15))
         
         # Boards frame
         boards_frame = ttk.Frame(main_frame)
         boards_frame.pack(fill="both", expand=True)
         
-        # Player board frame
-        player_frame = ttk.LabelFrame(boards_frame, text="Your Board")
-        player_frame.pack(side="left", padx=10, pady=10)
+        # Player board frame with improved styling
+        player_frame = ttk.LabelFrame(
+            boards_frame, 
+            text="Your Fleet", 
+            padding=10
+        )
+        player_frame.pack(side="left", padx=15, pady=10)
         
         # Player board view
         self.player_board_view = BoardView(player_frame)
         self.player_board_view.pack(padx=5, pady=5)
         
-        # AI board frame
-        ai_frame = ttk.LabelFrame(boards_frame, text="Opponent's Board")
-        ai_frame.pack(side="right", padx=10, pady=10)
+        # AI board frame with improved styling
+        ai_frame = ttk.LabelFrame(
+            boards_frame, 
+            text="Enemy Waters", 
+            padding=10
+        )
+        ai_frame.pack(side="right", padx=15, pady=10)
         
         # AI board view
         self.ai_board_view = BoardView(ai_frame)
@@ -52,7 +70,7 @@ class GameView(tk.Tk):
         
         # Control panel
         self.control_panel = ControlPanel(main_frame)
-        self.control_panel.pack(fill="x", padx=10, pady=10)
+        self.control_panel.pack(fill="x", padx=10, pady=15)
     
     def _setup_callbacks(self):
         """Set up callback functions."""
@@ -116,14 +134,20 @@ class GameView(tk.Tk):
         if self.game_state.get_current_phase() == GamePhase.SETUP:
             # Place a ship
             orientation = self.control_panel.get_orientation()
-            success = self.game_state.place_player_ship(row, col, orientation)
             
-            # Update the UI
-            self._update_ui()
-            
-            # Check if all ships are placed
-            if self.game_state.get_current_phase() == GamePhase.PLAYER_TURN:
-                messagebox.showinfo("Ships Placed", "All ships placed. Your turn to fire!")
+            # Check if placement is valid before attempting to place
+            if self._can_place_ship(row, col, self.current_ship_size, orientation):
+                success = self.game_state.place_player_ship(row, col, orientation)
+                
+                # Update the UI
+                self._update_ui()
+                
+                # Check if all ships are placed
+                if self.game_state.get_current_phase() == GamePhase.PLAYER_TURN:
+                    messagebox.showinfo("Ships Placed", "All ships placed. Your turn to fire!")
+            else:
+                # Show error message for invalid placement
+                self.control_panel.update_status("Invalid ship placement! Ships must be within the board and not overlap with other ships.")
     
     def _on_player_board_hover(self, row, col):
         """Handle hover events on the player's board.
@@ -133,16 +157,30 @@ class GameView(tk.Tk):
             col (int): The column index
         """
         if self.game_state.get_current_phase() == GamePhase.SETUP and self.current_ship_size:
+            # Store last hover position for orientation changes
+            self.last_hover_pos = (row, col)
+            
             # Show ship placement preview
             orientation = self.control_panel.get_orientation()
             
             # Check if placement is valid
             valid = self._can_place_ship(row, col, self.current_ship_size, orientation)
             
-            # Show preview
-            self.player_board_view.show_placement_preview(
-                row, col, self.current_ship_size, orientation, valid
-            )
+            # Calculate ship coordinates for preview
+            ship_coords = []
+            for i in range(self.current_ship_size):
+                r, c = row, col
+                if orientation == Orientation.HORIZONTAL:
+                    c += i
+                else:  # VERTICAL
+                    r += i
+                
+                # Only add coordinates that are within the board
+                if 0 <= r < self.player_board_view.board_size and 0 <= c < self.player_board_view.board_size:
+                    ship_coords.append((r, c))
+            
+            # Show preview only for valid coordinates
+            self.player_board_view.show_placement_preview(ship_coords, valid)
     
     def _can_place_ship(self, row, col, ship_size, orientation):
         """Check if a ship can be placed at the specified position.
@@ -156,17 +194,22 @@ class GameView(tk.Tk):
         Returns:
             bool: True if the ship can be placed, False otherwise
         """
+        if not ship_size:
+            return False
+            
         board = self.game_state.get_player_board()
+        board_size = board.size
         
         # Check if the ship would go out of bounds
         if orientation == Orientation.HORIZONTAL:
-            if col + ship_size > board.size:
+            if col + ship_size > board_size:
                 return False
         else:  # VERTICAL
-            if row + ship_size > board.size:
+            if row + ship_size > board_size:
                 return False
         
         # Check if the ship would overlap with another ship
+        # Note: We only check for direct overlap, not adjacency
         for i in range(ship_size):
             r, c = row, col
             if orientation == Orientation.HORIZONTAL:
@@ -177,16 +220,6 @@ class GameView(tk.Tk):
             # Check if the cell already has a ship
             if board.get_cell(r, c).has_ship():
                 return False
-            
-            # Check adjacent cells (optional, for spacing between ships)
-            for dr in [-1, 0, 1]:
-                for dc in [-1, 0, 1]:
-                    nr, nc = r + dr, c + dc
-                    if (0 <= nr < board.size and 0 <= nc < board.size and 
-                        (nr != r or nc != c)):
-                        cell = board.get_cell(nr, nc)
-                        if cell and cell.has_ship():
-                            return False
         
         return True
     
@@ -198,6 +231,15 @@ class GameView(tk.Tk):
             col (int): The column index
         """
         if self.game_state.get_current_phase() == GamePhase.PLAYER_TURN:
+            # Check if the cell has already been attacked
+            ai_board = self.game_state.get_ai_board()
+            cell = ai_board.get_cell(row, col)
+            
+            if cell and cell.is_attacked():
+                # Cell already attacked, show message and don't proceed with AI turn
+                self.control_panel.update_status("You've already fired at this location. Try another spot.")
+                return
+            
             # Player's turn to fire
             valid_move, hit, ship_sunk, game_over = self.game_state.player_shoot(row, col)
             
@@ -206,7 +248,7 @@ class GameView(tk.Tk):
                 self._update_ui()
                 
                 if game_over:
-                    messagebox.showinfo("Game Over", "Congratulations! You won the game!")
+                    messagebox.showinfo("Victory!", "Congratulations! You won the game!")
                     return
                 
                 # AI's turn
@@ -229,7 +271,7 @@ class GameView(tk.Tk):
                 self._update_ui()
                 
                 if game_over:
-                    messagebox.showinfo("Game Over", "Game over! The AI won.")
+                    messagebox.showinfo("Defeat", "Game over! The enemy has destroyed your fleet.")
     
     def _random_placement(self):
         """Place ships randomly."""
