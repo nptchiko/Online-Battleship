@@ -4,6 +4,7 @@ from models.ship import Orientation
 from models.game_state import GamePhase
 from ai.random_ai import RandomAI
 from ai.hunt_target_ai import HuntTargetAI
+from ai.Probalisty_AI  import OptimizedProbabilityAI
 
 class ControlPanel(tk.Frame):
     """Control panel for the Battleship game."""
@@ -18,7 +19,8 @@ class ControlPanel(tk.Frame):
         
         self.ai_strategies = {
             "Random AI": RandomAI,
-            "Hunt & Target AI": HuntTargetAI
+            "Hunt & Target AI": HuntTargetAI,
+            "Probalisty AI ":OptimizedProbabilityAI
         }
         
         self._create_widgets()
