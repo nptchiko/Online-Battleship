@@ -77,6 +77,7 @@ class OptimizedProbabilityAI(AIStrategy):
         
         # Track shots to avoid redundancy
         self.next_shots = []
+        self.last_move = None  # Track the last move to avoid repetition
         
         # Enhanced ship tracking
         self.hunt_mode = True
@@ -381,6 +382,9 @@ class OptimizedProbabilityAI(AIStrategy):
             # Set probability boost based on priority
             for r, c, priority in self.potential_targets:
                 self.probability_map[r, c] *= priority
+        
+        # IMPORTANT: Set probability to 0 for cells already shot at
+        self.probability_map[self.shots_fired] = 0
     
     def get_move(self, opponent_board=None):
         """Get the next move based on probability map.
@@ -391,26 +395,51 @@ class OptimizedProbabilityAI(AIStrategy):
         Returns:
             tuple: (row, col) coordinates for the next shot
         """
-        # If we have queued shots, use them first
-        if self.next_shots:
-            return self.next_shots.pop(0)
+        # CRITICAL FIX: Always ensure we don't repeat shots
+        # If we have queued shots, check and filter them first
+        while self.next_shots:
+            next_move = self.next_shots[0]
+            if not self.shots_fired[next_move]:
+                return self.next_shots.pop(0)
+            else:
+                # Remove shot if already taken
+                self.next_shots.pop(0)
         
         # If we have potential targets in target mode, use highest probability one
         if not self.hunt_mode and self.potential_targets:
-            # Sort by priority (third element in tuple)
-            self.potential_targets.sort(key=lambda x: (self.probability_map[x[0], x[1]] * x[2]), reverse=True)
-            if self.potential_targets:
-                return self.potential_targets[0][:2]  # Return just row, col
+            # Filter out any targets that have already been shot at
+            valid_targets = [(r, c, p) for r, c, p in self.potential_targets 
+                            if not self.shots_fired[r, c]]
+            
+            if valid_targets:
+                # Sort by priority (third element in tuple)
+                valid_targets.sort(key=lambda x: (self.probability_map[x[0], x[1]] * x[2]), reverse=True)
+                return valid_targets[0][:2]  # Return just row, col
         
         # Find all unshot cells
         unshot_mask = ~self.shots_fired
         
         # If no cells left, return a random position (shouldn't happen in normal game)
         if not np.any(unshot_mask):
+            # All cells have been shot at - game should be over by now
+            # Just to be safe, return any cell that hasn't been recorded as shot
+            for r in range(self.board_size):
+                for c in range(self.board_size):
+                    if not self.shots_fired[r, c]:
+                        return (r, c)
+            # If absolutely all cells recorded as shot, return random as fallback
+            # This should never happen in a normal game
             return (random.randint(0, self.board_size-1), random.randint(0, self.board_size-1))
         
         # Get probability map for unshot cells only
         masked_probabilities = self.probability_map * unshot_mask
+        
+        # Ensure there are valid values
+        if np.all(masked_probabilities == 0):
+            # If probabilities are all zero, just pick any unshot cell
+            coords = np.where(unshot_mask)
+            candidates = list(zip(coords[0], coords[1]))
+            return random.choice(candidates)
         
         # Find max probability
         max_prob = np.max(masked_probabilities)
@@ -419,8 +448,21 @@ class OptimizedProbabilityAI(AIStrategy):
         coords = np.where(masked_probabilities == max_prob)
         candidates = list(zip(coords[0], coords[1]))
         
+        # IMPORTANT: Double-check to ensure we're not shooting at already shot cells
+        candidates = [(r, c) for r, c in candidates if not self.shots_fired[r, c]]
+        
+        if not candidates:
+            # Fallback: choose any unshot cell
+            coords = np.where(unshot_mask)
+            candidates = list(zip(coords[0], coords[1]))
+        
         # Randomly choose among the highest probability cells
-        return random.choice(candidates)
+        chosen_move = random.choice(candidates)
+        
+        # Store this move as the last move to avoid repetition
+        self.last_move = chosen_move
+        
+        return chosen_move
     
     def _assign_ship_id(self, row, col):
         """Assign a ship ID to a new hit or connect with adjacent ship."""
@@ -520,6 +562,11 @@ class OptimizedProbabilityAI(AIStrategy):
             ship_sunk (bool): Whether a ship was sunk
             game_over (bool): Whether the game is over
         """
+        # CRITICAL FIX: Check if we've already recorded this shot
+        if self.shots_fired[row, col]:
+            # This shot was already recorded, might be a duplicate notification
+            return
+            
         # Update basic tracking
         self.shots_fired[row, col] = True
         
@@ -553,6 +600,10 @@ class OptimizedProbabilityAI(AIStrategy):
         
         # Clear cache because board state changed
         self.valid_placement_cache = {}
+        
+        # Filter out any potential targets that are now invalid
+        self.potential_targets = [(r, c, p) for r, c, p in self.potential_targets 
+                                 if not self.shots_fired[r, c]]
         
         # Update probability map for next move
         self.update_probability_map()
