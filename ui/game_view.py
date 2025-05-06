@@ -22,6 +22,7 @@ class GameView(tk.Tk):
 
         self._create_widgets()
         self._setup_callbacks()
+        self.ai_steps = 0
 
         # Start a new game
         self._new_game()
@@ -284,10 +285,10 @@ class GameView(tk.Tk):
 
                 # Update the UI
                 self._update_ui()
-
+                self.ai_steps += 1
                 if game_over:
                     messagebox.showinfo(
-                        "Defeat", "Game over! The enemy has destroyed your fleet.")
+                        "Defeat", f"Game over! The enemy has destroyed your fleet with steps of {self.ai_steps}")
 
     def _random_placement(self):
         """Place ships randomly."""

@@ -16,11 +16,23 @@ class HuntTargetAI(AIStrategy):
         self.description = "Switches to targeting mode after a hit. Medium efficiency, easy to implement."
         self.available_moves = [(r, c) for r in range(board_size)
                                 for c in range(board_size)]
+        self.parity_moves = []
         random.shuffle(self.available_moves)
+
+        self.define_parity()
+
         self.mode = "hunt"  # "hunt" or "target"
         self.last_hit = None
         self.hits = []  # List of successful hits that are part of the current ship
         self.targets = []  # Potential targets around hits
+
+    def define_parity(self):
+
+        for row in range(self.board_size):
+            for col in range(self.board_size):
+                if (row + col) % 2 == 0:
+                    self.parity_moves.append((row, col))
+        random.shuffle(self.parity_moves)
 
     def get_move(self, opponent_board):
         """Get the next move for the AI.
@@ -31,6 +43,7 @@ class HuntTargetAI(AIStrategy):
         Returns:
             tuple: (row, col) coordinates for the next shot
         """
+
         if self.mode == "target" and self.targets:
             # Target mode: choose from the target list
             move = self.targets.pop(0)
@@ -38,14 +51,21 @@ class HuntTargetAI(AIStrategy):
             while move not in self.available_moves and self.targets:
                 move = self.targets.pop(0)
 
+            if move in self.parity_moves:
+                self.parity_moves.remove(move)
+                self.available_moves.remove(move)
+                return move
+
             if move in self.available_moves:
                 self.available_moves.remove(move)
                 return move
 
         # Hunt mode or no valid targets: choose a random move
         self.mode = "hunt"
-        if not self.available_moves:
-            return None
+        if self.parity_moves:
+            temp = self.parity_moves.pop()
+            self.available_moves.remove(temp)
+            return temp
 
         return self.available_moves.pop()
 
