@@ -66,13 +66,16 @@ class OptimizedProbabilityAI(AIStrategy):
         """Initialize heat map with higher probabilities towards the center."""
         # Center bias heatmap (ships are more likely to be in center areas)
         center = self.board_size // 2
-        for r in range(self.board_size):
-            for c in range(self.board_size):
+
+        for y in range(self.board_size):
+            for x in range(self.board_size):
                 # Calculate distance from center (0.0 to 1.0 range)
                 dist_from_center = (
-                    (r - center)**2 + (c - center)**2)**0.5 / (2*center)
+                    (y - center)**2 + (x - center)**2)**0.5 / (2*center)
                 # Inverse of distance (higher in center)
-                self.heat_map[r, c] = 1.0 + (1.0 - dist_from_center) * 0.2
+                self.heat_map[y, x] = 1.0 + (1.0 - dist_from_center) * 0.2
+        np.set_printoptions(precision=3)
+        print(self.heat_map)
 
     def _initialize_parity_mask(self):
         """Initialize optimized parity mask based on largest ship size."""
@@ -430,7 +433,7 @@ class OptimizedProbabilityAI(AIStrategy):
         return chosen_move
 
     def _assign_ship_id(self, row, col):
-        """Assign a ship ID to a new hit or connect with adjacent ship."""
+
         # Check adjacent cells for existing hits
         # right, down, left, up
         directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
@@ -544,7 +547,7 @@ class OptimizedProbabilityAI(AIStrategy):
             self.hits[row, col] = True
 
             # Assign to a ship
-            ship_id = self._assign_ship_id(row, col)
+#            ship_id = self._assign_ship_id(row, col)
 
             # Update targeting mode
             self.hunt_mode = False
@@ -587,4 +590,3 @@ class OptimizedProbabilityAI(AIStrategy):
 
         # Restore game history
         self.game_history = old_history
-
