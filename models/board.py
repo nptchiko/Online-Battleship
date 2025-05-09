@@ -115,6 +115,7 @@ class Board:
         Returns:
             bool: True if all ships were placed successfully, False otherwise
         """
+        self.reset()
         for size, name in ship_configs:
             ship = Ship(size, name)
             placed = False
