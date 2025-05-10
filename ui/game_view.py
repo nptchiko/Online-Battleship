@@ -287,6 +287,7 @@ class GameView(tk.Tk):
                 self._update_ui()
                 self.ai_steps += 1
                 if game_over:
+                    self.ai_steps = 0
                     messagebox.showinfo(
                         "Defeat", f"Game over! The enemy has destroyed your fleet with steps of {self.ai_steps}")
 
