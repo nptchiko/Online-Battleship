@@ -65,8 +65,7 @@ class Board:
             if row + ship_size > self.size:
                 return False
 
-        # Check if the ship would overlap with another ship
-        # Note: We only check for direct overlap, not adjacency
+       
         for i in range(ship_size):
             r, c = row, col
             if orientation == Orientation.HORIZONTAL:
