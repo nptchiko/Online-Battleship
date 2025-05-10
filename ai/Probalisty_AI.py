@@ -74,8 +74,6 @@ class OptimizedProbabilityAI(AIStrategy):
                     (y - center)**2 + (x - center)**2)**0.5 / (2*center)
                 # Inverse of distance (higher in center)
                 self.heat_map[y, x] = 1.0 + (1.0 - dist_from_center) * 0.2
-        np.set_printoptions(precision=3)
-        print(self.heat_map)
 
     def _initialize_parity_mask(self):
         """Initialize optimized parity mask based on largest ship size."""
@@ -350,6 +348,10 @@ class OptimizedProbabilityAI(AIStrategy):
 
         # IMPORTANT: Set probability to 0 for cells already shot at
         self.probability_map[self.shots_fired] = 0
+        np.set_printoptions(precision=3)
+        print(self.probability_map)
+        print("next move :", list(np.argwhere(
+            self.probability_map == np.max(self.probability_map))))
 
     def get_move(self, opponent_board=None):
         """Get the next move based on probability map.
