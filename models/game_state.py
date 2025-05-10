@@ -175,11 +175,10 @@ class GameState:
             self.phase = GamePhase.PLAYER_TURN
             if hit:
                 if ship_sunk:
-                    self.message = f"AI hit and sunk your ship at ({row}, {
-                        col})! Your turn."
+                   self.message = f"AI hit and sunk your ship at ({row}, {col})! Your turn."
+
                 else:
-                    self.message = f"AI hit your ship at ({row}, {
-                        col})! Your turn."
+                     self.message = f"AI hit your ship at ({row}, {col})! Your turn."
             else:
                 self.message = f"AI missed at ({row}, {col})! Your turn."
 
