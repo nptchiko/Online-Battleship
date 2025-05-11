@@ -47,7 +47,10 @@ class Ship:
 
     def __str__(self):
         status = "sunk" if self.is_sunk() else f"{self.hits}/{self.size} hits"
-        position = f"at ({self.row}, {
-            self.col})" if self.is_placed else "not placed"
+        position = (
+    f"at ({self.row}, {self.col})"
+    if self.is_placed
+    else "not placed"
+            )
         orientation = "horizontal" if self.orientation == Orientation.HORIZONTAL else "vertical"
         return f"{self.name} ({self.size}) {position}, {orientation}, {status}"
