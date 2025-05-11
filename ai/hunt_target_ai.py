@@ -3,14 +3,9 @@ import random
 
 
 class HuntTargetAI(AIStrategy):
-    """AI strategy that switches to targeting mode after a hit."""
 
     def __init__(self, board_size=10):
-        """Initialize the Hunt & Target AI strategy.
 
-        Args:
-            board_size (int): The size of the game board
-        """
         super().__init__(board_size)
         self.name = "Hunt & Target AI"
         self.description = "Switches to targeting mode after a hit. Medium efficiency, easy to implement."
@@ -35,14 +30,6 @@ class HuntTargetAI(AIStrategy):
         random.shuffle(self.parity_moves)
 
     def get_move(self, opponent_board):
-        """Get the next move for the AI.
-
-        Args:
-            opponent_board: The opponent's board
-
-        Returns:
-            tuple: (row, col) coordinates for the next shot
-        """
 
         if self.mode == "target" and self.targets:
             # Target mode: choose from the target list
@@ -70,15 +57,6 @@ class HuntTargetAI(AIStrategy):
         return self.available_moves.pop()
 
     def notify_result(self, row, col, hit, ship_sunk, game_over):
-        """Update the AI with the result of its last move.
-
-        Args:
-            row (int): The row index of the last shot
-            col (int): The column index of the last shot
-            hit (bool): Whether the shot was a hit
-            ship_sunk (bool): Whether a ship was sunk
-            game_over (bool): Whether the game is over
-        """
         if hit:
             self.mode = "target"
             self.last_hit = (row, col)
@@ -98,12 +76,6 @@ class HuntTargetAI(AIStrategy):
             self.targets = []
 
     def _add_adjacent_targets(self, row, col):
-        """Add adjacent cells to the target list.
-
-        Args:
-            row (int): The row index of the hit
-            col (int): The column index of the hit
-        """
         # Check all four directions (up, right, down, left)
         directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]
 
@@ -114,7 +86,7 @@ class HuntTargetAI(AIStrategy):
                 self.targets.append((r, c))
 
     def _align_targets(self):
-        """Align targets along the ship axis if multiple hits are found."""
+
         if len(self.hits) < 2:
             return
 
