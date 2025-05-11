@@ -349,6 +349,10 @@ class OptimizedProbabilityAI(AIStrategy):
 
         # IMPORTANT: Set probability to 0 for cells already shot at
         self.probability_map[self.shots_fired] = 0
+        np.set_printoptions(precision=3)
+        print(self.probability_map)
+        print("next move :", list(np.argwhere(
+            self.probability_map == np.max(self.probability_map))))
 
     def get_move(self, opponent_board=None):
         """Get the next move based on probability map.
