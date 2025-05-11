@@ -1,57 +1,8 @@
 from abc import ABC, abstractmethod
 import numpy as np
 from collections import deque
+from ai.ai_strategy import AIStrategy
 import random
-
-
-class AIStrategy(ABC):
-    """Abstract base class for AI strategies in Battleship game."""
-
-    def __init__(self, board_size=10):
-        """Initialize the AI strategy.
-        Args:
-            board_size (int): The size of the game board
-        """
-        self.board_size = board_size
-        self.name = "Base AI"
-        self.description = "Base AI strategy"
-
-    @abstractmethod
-    def get_move(self, opponent_board):
-        """Get the next move for the AI.
-        Args:
-            opponent_board: The opponent's board
-
-        Returns:
-            tuple: (row, col) coordinates for the next shot
-        """
-        pass
-
-    @abstractmethod
-    def notify_result(self, row, col, hit, ship_sunk, game_over):
-        """Update the AI with the result of its last move.
-        Args:
-            row (int): The row index of the last shot
-            col (int): The column index of the last shot
-            hit (bool): Whether the shot was a hit
-            ship_sunk (bool): Whether a ship was sunk
-            game_over (bool): Whether the game is over
-        """
-        pass
-
-    def get_name(self):
-        """Get the name of the AI strategy.
-        Returns:
-            str: The name of the AI strategy
-        """
-        return self.name
-
-    def get_description(self):
-        """Get the description of the AI strategy.
-        Returns:
-            str: The description of the AI strategy
-        """
-        return self.description
 
 
 class OptimizedProbabilityAI(AIStrategy):
@@ -69,20 +20,23 @@ class OptimizedProbabilityAI(AIStrategy):
         self.description = "Uses advanced probability density maps with adaptive targeting"
 
         # Game state tracking
-        # Sort ship sizes list
+        # Sort ship sizes descending
         self.ship_sizes = sorted(ship_sizes, reverse=True)
         self.shots_fired = np.zeros((board_size, board_size), dtype=bool)
         self.hits = np.zeros((board_size, board_size), dtype=bool)
         self.misses = np.zeros((board_size, board_size), dtype=bool)
         self.probability_map = np.zeros((board_size, board_size))
-        self.remaining_ships = self.ship_sizes.copy()  # ship list remaining
+        self.remaining_ships = self.ship_sizes.copy()
 
+        # Track shots to avoid redundancy
         self.next_shots = []
-        self.last_move = None
 
+        self.last_move = None  # Track the last move to avoid repetition
+
+        # Enhanced ship tracking
         self.hunt_mode = True
-        self.current_ship_hits = []
-        self.ship_direction = None
+        self.current_ship_hits = []  # Track current ship we're targeting
+        self.ship_direction = None   # None, 'horizontal', or 'vertical'
         self.potential_targets = []  # Priority targets based on current hits
 
         # For ship identification
@@ -95,11 +49,11 @@ class OptimizedProbabilityAI(AIStrategy):
         self.parity_mask = np.zeros((board_size, board_size), dtype=bool)
         self._initialize_parity_mask()
 
-        #  Add heatmap for initial probability bias
+        # New: Add heatmap for initial probability bias
         self.heat_map = np.ones((board_size, board_size))
         self._initialize_heat_map()
 
-        #  Performance optimization
+        # New: Performance optimization
         self.valid_placement_cache = {}
 
         # Calculate initial probability map
@@ -120,6 +74,8 @@ class OptimizedProbabilityAI(AIStrategy):
                     (y - center)**2 + (x - center)**2)**0.5 / (2*center)
                 # Inverse of distance (higher in center)
                 self.heat_map[y, x] = 1.0 + (1.0 - dist_from_center) * 0.2
+        np.set_printoptions(precision=3)
+        print(self.heat_map)
 
     def _initialize_parity_mask(self):
         """Initialize optimized parity mask based on largest ship size."""
@@ -162,7 +118,7 @@ class OptimizedProbabilityAI(AIStrategy):
                     if self.misses[row, c]:
                         valid = False
                         break
-
+                    # New: also check if we know this is part of another ship
                     if self.hits[row, c]:
                         ship_id = self.ship_hit_map.get((row, c), None)
                         # If it's part of a ship and we know it's not the same orientation
@@ -182,6 +138,7 @@ class OptimizedProbabilityAI(AIStrategy):
                     if self.misses[r, col]:
                         valid = False
                         break
+                    # New: also check if we know this is part of another ship
                     if self.hits[r, col]:
                         ship_id = self.ship_hit_map.get((r, col), None)
                         # If it's part of a ship and we know it's not the same orientation
@@ -344,8 +301,10 @@ class OptimizedProbabilityAI(AIStrategy):
         ship_coords = [coord for coord,
                        id_val in self.ship_hit_map.items() if id_val == ship_id]
 
+        # Find orientation of the ship
         rows = {r for r, c in ship_coords}
         cols = {c for r, c in ship_coords}
+
         is_horizontal = len(rows) == 1
         is_vertical = len(cols) == 1
 
@@ -380,7 +339,6 @@ class OptimizedProbabilityAI(AIStrategy):
         """Update the probability density map based on current game state."""
         # Calculate base probabilities from valid ship placements
         self._count_valid_placements()
-
         # If we're targeting a ship, prioritize those cells
         if not self.hunt_mode:
             self.potential_targets = self._generate_target_candidates()
@@ -392,11 +350,6 @@ class OptimizedProbabilityAI(AIStrategy):
         # IMPORTANT: Set probability to 0 for cells already shot at
         self.probability_map[self.shots_fired] = 0
 
-        np.set_printoptions(precision=3)
-        print(self.probability_map)
-        print("next move :", list(np.argwhere(
-            self.probability_map == np.max(self.probability_map))))
-
     def get_move(self, opponent_board=None):
         """Get the next move based on probability map.
 
@@ -406,6 +359,7 @@ class OptimizedProbabilityAI(AIStrategy):
         Returns:
             tuple: (row, col) coordinates for the next shot
         """
+
         # CRITICAL FIX: Always ensure we don't repeat shots
         # If we have queued shots, check and filter them first
         while self.next_shots:
@@ -478,7 +432,7 @@ class OptimizedProbabilityAI(AIStrategy):
         return chosen_move
 
     def _assign_ship_id(self, row, col):
-        """Assign a ship ID to a new hit or connect with adjacent ship."""
+
         # Check adjacent cells for existing hits
         # right, down, left, up
         directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
@@ -549,55 +503,51 @@ class OptimizedProbabilityAI(AIStrategy):
         self.potential_targets = []
 
     def update_heat_map(self):
-        """Update heat map based on possible ship placements for remaining ships."""
-        # Reset heat map
-        self.heat_map = np.ones((self.board_size, self.board_size))
-
-        # Mark cells that cannot contain ships (already shot at)
-        for r in range(self.board_size):
-            for c in range(self.board_size):
-                if self.shots_fired[r, c]:
-                    self.heat_map[r, c] = 0
-
-        # Calculate probabilities based on possible ship placements for remaining ships
-        for ship_length in self.remaining_ships:
-            # Try placing this ship in every possible position
-            for r in range(self.board_size):
-                for c in range(self.board_size):
-                    # Try horizontal placement
-                    if c + ship_length <= self.board_size:
-                        can_place = True
-                        for i in range(ship_length):
-                            if not self._is_valid_coordinate(r, c + i) or self.misses[r, c + i]:
-                                can_place = False
-                                break
-
-                        if can_place:
-                            for i in range(ship_length):
-                                self.heat_map[r, c + i] += 1
-
-                    # Try vertical placement
-                    if r + ship_length <= self.board_size:
-                        can_place = True
-                        for i in range(ship_length):
-                            if not self._is_valid_coordinate(r + i, c) or self.misses[r + i, c]:
-                                can_place = False
-                                break
-
-                        if can_place:
-                            for i in range(ship_length):
-                                self.heat_map[r + i, c] += 1
-
-        # Apply additional weighting for cells adjacent to hits
-        if not self.hunt_mode and self.current_ship_hits:
-            for r in range(self.board_size):
-                for c in range(self.board_size):
-                    if self._is_valid_coordinate(r, c) and not self.shots_fired[r, c]:
-                        # Check proximity to existing hits
-                        for hit_r, hit_c in self.current_ship_hits:
-                            dist = abs(hit_r - r) + abs(hit_c - c)
-                            if dist == 1:  # Adjacent to a hit
-                                self.heat_map[r, c] *= 1.5
+        """Update heat map based on game history with improved techniques:
+        - Limited influence radius
+        - Gaussian smoothing
+        - Cumulative learning
+        """
+        if len(self.game_history) > 5:
+            # Analyze hit patterns
+            hits = [(r, c) for (r, c), hit, _ in self.game_history if hit]
+            if hits:
+                # Create a temporary heat map for this update
+                temp_heat_map = np.zeros((self.board_size, self.board_size))
+                
+                # Calculate center of hits
+                hit_rows = [r for r, c in hits]
+                hit_cols = [c for r, c in hits]
+                avg_row = sum(hit_rows) / len(hit_rows)
+                avg_col = sum(hit_cols) / len(hit_cols)
+                
+                # Set Gaussian parameters
+                sigma = 2.0  # Controls the spread of influence
+                max_influence_radius = 5  # Limit influence to cells within this distance
+                
+                # Update heat map with Gaussian influence
+                for r in range(self.board_size):
+                    for c in range(self.board_size):
+                        # Calculate Euclidean distance to center of hits
+                        dist = ((r - avg_row)**2 + (c - avg_col)**2)**0.5
+                        
+                        # Only update cells within the influence radius
+                        if dist <= max_influence_radius:
+                            # Apply Gaussian function for smooth falloff
+                            influence = np.exp(-dist**2 / (2 * sigma**2))
+                            temp_heat_map[r, c] = influence
+                
+                # Normalize the temp heat map to have maximum value of 0.2
+                # This ensures the update doesn't overwhelm previous learning
+                if np.max(temp_heat_map) > 0:
+                    temp_heat_map = temp_heat_map * 0.2 / np.max(temp_heat_map)
+                
+                # Cumulative learning: add to existing heat map rather than resetting
+                # Add 1.0 to ensure all cells have at least base probability
+                self.heat_map = self.heat_map * 0.9 + temp_heat_map + 1.0
+                
+                # Ensure the heat map doesn't grow unbounded
+                self.heat_map = np.clip(self.heat_map, 1.0, 1.5)
 
     def notify_result(self, row, col, hit, ship_sunk, game_over):
         """Update the AI with the result of its last move.
@@ -609,7 +559,7 @@ class OptimizedProbabilityAI(AIStrategy):
             ship_sunk (bool): Whether a ship was sunk
             game_over (bool): Whether the game is over
         """
-        # Check if we have already recorded this shot
+        # CRITICAL FIX: Check if we've already recorded this shot
         if self.shots_fired[row, col]:
             # This shot was already recorded, might be a duplicate notification
             return
@@ -625,7 +575,7 @@ class OptimizedProbabilityAI(AIStrategy):
             self.hits[row, col] = True
 
             # Assign to a ship
-            ship_id = self._assign_ship_id(row, col)
+#            ship_id = self._assign_ship_id(row, col)
 
             # Update targeting mode
             self.hunt_mode = False
