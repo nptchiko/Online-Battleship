@@ -40,7 +40,7 @@ def disconnect():
         room = server.onlineRoom[session["room"]]
         user = server.onlineUser[sid]
         print("{} left the room {}".format(user.name, session["room"]))
-        
+
         room.kick(sid)
 
         if room.getNumberOfUser() == 0:
@@ -55,7 +55,7 @@ def check_room(data):
     data = json.loads(data)
     global server
     room_id = data["room"]
-    
+
     sid = request.sid
 
     server.onlineUser[sid].name = data["name"]
@@ -73,18 +73,19 @@ def check_room(data):
     else:
         room = server.onlineRoom[room_id]
         flag = room.accept(server.onlineUser[sid])
-        
-        admin : User
+
+        admin: User
         for key in room.userInRoom.keys():
             if room.userInRoom[key].uid != request.sid:
                 admin = room.userInRoom[key]
 
         if flag is True:
             emit("room_status", {"status": "02", "name": admin.name}, to=sid)
-            emit("room_status", {"status": "03", "name": server.onlineUser[request.sid].name}, to=admin.uid)
-            
+            emit("room_status", {
+                 "status": "03", "name": server.onlineUser[request.sid].name}, to=admin.uid)
+
             join_room(room_id)
-            
+
         else:
             emit("room_status", {"status": "00"}, to=sid)
             disconnect()
@@ -123,7 +124,7 @@ def readyToStart(msg):
 @socketio.on("ready_to_start_bot")
 def bot(msg):
     global server
-    
+
     sid = request.sid
     room = server.onlineRoom[session['room']]
 
@@ -131,8 +132,8 @@ def bot(msg):
         emit("room_status", {"status": "00"}, to=sid)       # 00: full
         return
     else:
-        emit("room_status", {"status": "03", "name": "Miku Bot"}, to=sid)   
-        #xác nhận add bot thành công và coi bot như opp của admin phòng
+        emit("room_status", {"status": "03", "name": "Miku Bot"}, to=sid)
+        # xác nhận add bot thành công và coi bot như opp của admin phòng
     room.startGame()
     emit("placeShip", to=session["room"])
     print("added bot to room")
@@ -200,7 +201,7 @@ def shoot_(data):
     cur = room.game.turn
     ally = room.game.players[cur]
     bot: AIPlayer = room.game.players["bot"]
-    
+
     print("{} shot {}".format(ally, bot))
     context: dict = ally.shoot(bot, (data["x"], data["y"]))
     emit("update_context", {"context": context, "my_turn": True}, to=cur)
@@ -215,9 +216,10 @@ def shoot_(data):
         print("bot ban \n")
         context: dict = bot.shoot(ally, bot.theBestAlgorithmInTheWorld())
         time.sleep(3)
-        
+
         while context["result"]:
-            emit("update_context", {"context": context, "my_turn": False}, to=cur)
+            emit("update_context", {
+                 "context": context, "my_turn": False}, to=cur)
             print("bot ban lien tuc \n")
 
             if room.game.isCurrentPlayerWin("bot"):
